@@ -55,7 +55,7 @@ namespace MARVELMIND
     QueueHandle_t Marvelmind::_pose_queue{};
 
 
-    void Marvelmind::read_new_data(void *arg) 
+    void Marvelmind::_read_new_data(void *arg) 
     {
         uint8_t rx_buffer[UART_RX_BUFFER];
         data_types::Pose measured_pose;
@@ -86,12 +86,13 @@ namespace MARVELMIND
                     }
                 }
 
-                i += new_data_header->packet_size;    
+                i += new_data_header->packet_size + sizeof(Marvelmind_Msg_Header);    
             }
+
+            vTaskDelay(50 / portTICK_PERIOD_MS);
         }
         vTaskDelete(NULL);
     }
-    
 
     esp_err_t Marvelmind::init() 
     {   
@@ -107,7 +108,7 @@ namespace MARVELMIND
 
         if(status == ESP_OK) {
             _pose_queue = xQueueCreate(1, sizeof(data_types::Pose));
-            xTaskCreate(read_new_data, "read_new_data", 2048, NULL, 10, NULL);
+            xTaskCreate(_read_new_data, "read_new_data", 2048, NULL, 10, NULL);
         }
 
         return status;

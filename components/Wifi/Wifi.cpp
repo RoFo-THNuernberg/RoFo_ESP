@@ -68,10 +68,10 @@ namespace WIFI
         }
 
         if(ESP_OK == status)
-            status = esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, (esp_event_handler_t)&_event_handler, NULL, NULL);
+            status = esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &_event_handler, NULL, NULL);
 
         if(ESP_OK == status)
-            status = esp_event_handler_instance_register(IP_EVENT, IP_EVENT_STA_GOT_IP, (esp_event_handler_t)&_event_handler, NULL, NULL);
+            status = esp_event_handler_instance_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &_event_handler, NULL, NULL);
         
         if(ESP_OK == status)
             status = esp_wifi_set_mode(WIFI_MODE_STA);

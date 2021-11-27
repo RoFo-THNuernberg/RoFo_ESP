@@ -18,7 +18,7 @@ namespace MARVELMIND
             const data_types::Pose& get_Pose() override;
 
         private:
-            static void read_new_data(void *arg);
+            static void _read_new_data(void *arg);
 
             data_types::Pose _current_pose;
 

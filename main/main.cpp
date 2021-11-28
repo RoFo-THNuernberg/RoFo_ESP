@@ -2,14 +2,15 @@
 #include "nvs_flash.h"
 
 #include "Wifi.h"
-#include "Socket.h"
 #include "SensorPose.h"
 #include "Marvelmind.h"
 #include "data_types.h"
+#include "NodeHandle.h"
+#include "Publisher.h"
 
 using namespace MARVELMIND;
 using namespace WIFI;
-using namespace SOCKET;
+
 
 extern "C" void app_main(void)
 {   
@@ -26,8 +27,9 @@ extern "C" void app_main(void)
     ESP_ERROR_CHECK(wifi.init());
     ESP_ERROR_CHECK(wifi.begin());
 
-    Socket sock;
-    sock.init();
+    ros::NodeHandle nh;
+
+    ros::Publisher pub = nh.advertise<std::string>("test");
 
     SensorPose *pose_sensor = new Marvelmind();
     ESP_ERROR_CHECK(pose_sensor->init());
@@ -39,8 +41,6 @@ extern "C" void app_main(void)
 
         char measurement[128];
         sprintf(measurement, "X: %f, Y: %f, Theta: %f", x.x, x.y,  x.theta);
-
-        sock.send_data("main", measurement);
 
         vTaskDelay(1000 / portTICK_PERIOD_MS);
     }

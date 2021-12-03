@@ -1,3 +1,3 @@
-idf_component_register(SRCS "NodeHandle.cpp" "Publisher.cpp" "RosBridgeMsg.cpp"
+idf_component_register(SRCS "NodeHandle.cpp" "Publisher.cpp" "ros_msgs.cpp"
                     INCLUDE_DIRS "include"
-                    REQUIRES Socket)
+                    REQUIRES Socket data_types)

@@ -18,7 +18,7 @@ namespace MARVELMIND
     //Marvelmind UART communication protcol
     //see: https://marvelmind.com/pics/marvelmind_interfaces.pdf
 
-    struct __attribute__((packed)) Marvelmind_Msg_Header  
+    struct __attribute__((packed, aligned(1))) Marvelmind_Msg_Header  
     {
         uint8_t destination_addr;
         uint8_t packet_type;
@@ -26,7 +26,7 @@ namespace MARVELMIND
         uint8_t packet_size;
     };
 
-    struct __attribute__((packed))  Marvelmind_Rx_Data 
+    struct __attribute__((packed, aligned(1)))  Marvelmind_Rx_Data 
     {
         Marvelmind_Msg_Header header;
         uint32_t timestamp_ms;
@@ -58,7 +58,7 @@ namespace MARVELMIND
     void Marvelmind::_read_new_data(void *arg) 
     {
         uint8_t rx_buffer[UART_RX_BUFFER];
-        data_types::Pose measured_pose;
+        data_types::Pose2D measured_pose;
 
         while(1) 
         {
@@ -107,14 +107,14 @@ namespace MARVELMIND
             status |= uart_set_pin(_uart_port, UART_TX_PIN, UART_RX_PIN, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
 
         if(status == ESP_OK) {
-            _pose_queue = xQueueCreate(1, sizeof(data_types::Pose));
+            _pose_queue = xQueueCreate(1, sizeof(data_types::Pose2D));
             xTaskCreate(_read_new_data, "read_new_data", 2048, NULL, 10, NULL);
         }
 
         return status;
     }
 
-    const data_types::Pose& Marvelmind::get_Pose() {
+    const data_types::Pose2D& Marvelmind::get_Pose() {
         xQueuePeek(_pose_queue, &_current_pose, 0);
 
         return _current_pose;

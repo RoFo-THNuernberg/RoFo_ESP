@@ -2,10 +2,10 @@
 
 namespace data_types 
 {
-    class Pose {
+    class Pose2D {
         public:
-            Pose() : x{0}, y{0}, theta{0} {};
-            Pose(float new_x, float new_y, float new_theta) : x{new_x}, y{new_y}, theta{new_theta} {};
+            Pose2D() : x{0}, y{0}, theta{0} {};
+            Pose2D(float x, float y, float theta) : x{x}, y{y}, theta{theta} {};
 
             float x, y, theta;
     };

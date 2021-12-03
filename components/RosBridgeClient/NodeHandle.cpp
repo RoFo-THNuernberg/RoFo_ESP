@@ -2,12 +2,23 @@
 
 namespace ros
 {   
-    NodeHandle::NodeHandle() : sock{Socket::init()} {}
-
-    void NodeHandle::_send_ros_msg(RosBridgeMsg& new_msg)
+    NodeHandle::NodeHandle(std::string node_name) : _sock{Socket::init()}, _node_name{node_name} 
     {
-        sock->send_data(new_msg.getJSON());
+        uint8_t *pkt_buffer = new uint8_t[_node_name.size() + 2];
+        int pkt_len = 0;
+
+        pkt_buffer[0] = INIT_ID;
+        pkt_len++;
+
+        memcpy(pkt_buffer + pkt_len, _node_name.c_str(), _node_name.size());
+        pkt_len += _node_name.size();
+
+        pkt_buffer[pkt_len] = '\0';
+        pkt_len++;
+        
+        SocketPaket *new_pkt = new SocketPaket(pkt_buffer, pkt_len);
+        _sock->send_data(new_pkt);
     }
-    
+
 }
 

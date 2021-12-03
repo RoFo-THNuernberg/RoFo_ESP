@@ -20,9 +20,9 @@ menu "Socket Configuration"
             Select protocol (udp, tcp)
 
 
-    config TX_BUFFER_SIZE
-        int "tx buffer size"
-        default 1024
+    config TX_QUEUE_SIZE
+        int "tx queue size"
+        default 32
         help
-            set the max amount of bytes for transmission
+            set the max amount of messages to be stored in the tx_queue
 endmenu

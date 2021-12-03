@@ -1,0 +1,23 @@
+menu "RosBridgeClient"
+
+    config INIT_ID  
+            int "init id"
+            range 0 255
+            default 1
+            help
+                id for initializing external node
+                
+    config ADVERTISE_ID   
+        int "advertise id"
+        range 0 255
+        default 17
+        help
+            id for "advertise topic" tcp packets
+
+    config PUBLISH_ID   
+        int "publish id"
+        range 0 255
+        default 18
+        help
+            id for "publish topic" tcp packets
+endmenu

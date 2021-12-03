@@ -7,7 +7,7 @@
 class SensorPose {
     public:
         virtual esp_err_t init() = 0;
-        virtual const data_types::Pose& get_Pose() = 0;
+        virtual const data_types::Pose2D& get_Pose() = 0;
         ~SensorPose();
 };
 

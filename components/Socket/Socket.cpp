@@ -4,64 +4,42 @@
 #define SOCKET_PORT CONFIG_SOCKET_PORT
 #define SOCKET_PROTOCOL CONFIG_SOCKET_PROTOCOL
 #define SERVER_IP_ADDR CONFIG_SERVER_IP_ADDR
-#define TX_BUFFER_SIZE CONFIG_TX_BUFFER_SIZE 
+#define TX_QUEUE_SIZE CONFIG_TX_QUEUE_SIZE
 
 #define TAG "Socket"
 
 Socket* Socket::_sock_obj = nullptr;
-SemaphoreHandle_t Socket::_tx_buf_mutx{};
+QueueHandle_t Socket::_tx_queue{};
 
-Socket::Socket() : _tx_buffer{new char[TX_BUFFER_SIZE]}, _port{SOCKET_PORT} , _protocol{SOCKET_PROTOCOL}, _server_ip{SERVER_IP_ADDR}
+Socket::Socket() :  _port{SOCKET_PORT} , _protocol{SOCKET_PROTOCOL}, _server_ip{SERVER_IP_ADDR}
 {
-    _dest_addr.sin_addr.s_addr = inet_addr(_server_ip.c_str());
-    _dest_addr.sin_family = AF_INET;
-    _dest_addr.sin_port = htons(_port);
+    _server_socket.sin_addr.s_addr = inet_addr(_server_ip.c_str());
+    _server_socket.sin_family = AF_INET;
+    _server_socket.sin_port = htons(_port);
 
-    _tx_buf_mutx = xSemaphoreCreateMutex();
+    _tx_queue = xQueueCreate(TX_QUEUE_SIZE, sizeof(SocketPaket*));
 
     _connect_socket();
-}
 
-Socket::~Socket() 
-{
-    delete[] _tx_buffer;
-    _tx_buffer = nullptr;
+    xTaskCreate(_send_data_task, "write_data_task", 4096, this, 5, NULL);
 }
 
 Socket* Socket::init()
 {
     if (_sock_obj == nullptr)
-    {
+    {   
         ESP_LOGI(TAG, "Creating Socket Object...");
         _sock_obj = new Socket();
-
-        xTaskCreate(_send_data_task, "write_data_task", 4096, _sock_obj, 5, NULL);
     }
 
     return _sock_obj;
 }
 
-esp_err_t Socket::send_data(const char *data_buf)
+esp_err_t Socket::send_data(SocketPaket const* new_paket)
 {   
     esp_err_t status = ESP_OK;
 
-    int data_buf_len = strlen(data_buf);
-
-    if (_tx_buffer_len + data_buf_len <= TX_BUFFER_SIZE)
-    {   
-
-        if(pdTRUE == xSemaphoreTake(_tx_buf_mutx, 0))
-        {   
-
-            strcpy(_tx_buffer + _tx_buffer_len, data_buf);
-            _tx_buffer_len += data_buf_len;
-
-            xSemaphoreGive(_tx_buf_mutx);
-        }
-        else
-            status = ESP_FAIL;
-    }
-    else 
+    if(pdPASS != xQueueSend(_tx_queue, &new_paket, 0))
         status = ESP_FAIL;
 
     return status;
@@ -82,7 +60,7 @@ void Socket::_connect_socket()
         {
             ESP_LOGI(TAG, "Socket created, connecting to %s:%d", _server_ip.c_str(), _port);
 
-            int err = connect(_socket_fd, (struct sockaddr*)&_dest_addr, sizeof(struct sockaddr_in));
+            int err = connect(_socket_fd, (struct sockaddr*)&_server_socket, sizeof(struct sockaddr_in));
             if (!err) 
             {
                 ESP_LOGI(TAG, "Successfully connected to %d", _port);
@@ -120,28 +98,33 @@ void Socket::_restart_socket()
 void Socket::_send_data_task(void *arg)
 {
     Socket *this_sock = (Socket*)arg;
+
     while(1)
     {
-        if(this_sock->_tx_buffer_len > 0)
+
+        SocketPaket *paket;
+
+        xQueueReceive(_tx_queue, &paket, portMAX_DELAY);
+
+        if(paket != nullptr)
         {
-            xSemaphoreTake(_tx_buf_mutx, portMAX_DELAY);
-            
-            int err_len = send(this_sock->_socket_fd, this_sock->_tx_buffer, this_sock->_tx_buffer_len, 0);
+            int err;
 
-            if (err_len >= 0) 
+            do 
             {
-                this_sock->_tx_buffer_len = 0;
-                xSemaphoreGive(this_sock->_tx_buf_mutx);    
-            } 
-            else 
-            {   
-                xSemaphoreGive(this_sock->_tx_buf_mutx);
+                err = send(this_sock->_socket_fd, paket->buffer, paket->buffer_len, 0);
 
-                ESP_LOGE(TAG, "Error occurred during sending: errno %d", errno);
+                if(err < 0)
+                {
+                    ESP_LOGE(TAG, "Error occurred during sending: errno %d", errno);
 
-                if(errno != ENOMEM)
-                    this_sock->_restart_socket();
+                    if(errno != ENOMEM)
+                        this_sock->_restart_socket();
+                }
             } 
+            while(err < 0);
+
+            delete paket;
         }
 
         vTaskDelay(50 / portTICK_PERIOD_MS);

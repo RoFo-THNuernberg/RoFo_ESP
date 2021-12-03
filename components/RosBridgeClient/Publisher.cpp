@@ -3,5 +3,5 @@
 
 namespace ros
 {
-    Publisher::Publisher(NodeHandle& nh) : _nh{nh} {};
+
 }

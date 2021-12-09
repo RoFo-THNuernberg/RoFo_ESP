@@ -4,13 +4,20 @@
 #include "Wifi.h"
 #include "SensorPose.h"
 #include "Marvelmind.h"
-#include "data_types.h"
 #include "NodeHandle.h"
 #include "Publisher.h"
-#include "ros_msgs.h"
+#include "RosMsgs.h"
 
 using namespace MARVELMIND;
 using namespace WIFI;
+
+#define TAG "Main"
+
+void callback_test(ros_msgs::RosMsg& p)
+{ 
+  ros_msgs::Pose2D& pose = (ros_msgs::Pose2D&)p;
+  ESP_LOGI(TAG,  "Callback: X: %f, Y: %f, Theta: %f\n", pose.x, pose.y,  pose.theta);
+}
 
 
 extern "C" void app_main(void)
@@ -30,14 +37,16 @@ extern "C" void app_main(void)
 
     ros::NodeHandle nh("robot_1");
 
-    ros::Publisher pub = nh.advertise<ros_msgs::Pose2D>("pose2D");
+    auto pub = nh.advertise<ros_msgs::Pose2D>("pose2D");
+
+    nh.subscribe<ros_msgs::Pose2D>("set_pose2D", callback_test);
 
     SensorPose *pose_sensor = new Marvelmind();
     ESP_ERROR_CHECK(pose_sensor->init());
 
     while(1) 
     { 
-        data_types::Pose2D x = pose_sensor->get_Pose();
+        ros_msgs::Pose2D x = pose_sensor->get_Pose();
         printf("X: %f, Y: %f, Theta: %f\n", x.x, x.y,  x.theta);
 
         char measurement[128];

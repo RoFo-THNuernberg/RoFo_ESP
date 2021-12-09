@@ -1,3 +1,3 @@
-idf_component_register(SRCS "NodeHandle.cpp" "Publisher.cpp" "ros_msgs.cpp"
+idf_component_register(SRCS "NodeHandle.cpp"
                     INCLUDE_DIRS "include"
-                    REQUIRES Socket data_types)
+                    REQUIRES Socket RosMsgs SmartBufferPtr)

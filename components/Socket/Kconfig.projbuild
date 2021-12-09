@@ -13,12 +13,6 @@ menu "Socket Configuration"
         help
             Port for tcp/udp socket communication
 
-    config SOCKET_PROTOCOL
-        string "Socket Protocol"
-        default tcp
-        help
-            Select protocol (udp, tcp)
-
 
     config TX_QUEUE_SIZE
         int "tx queue size"

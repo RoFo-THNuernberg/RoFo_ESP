@@ -1,0 +1,11 @@
+#pragma once
+
+enum MSG_ID {
+    INIT_ID = 0x01,
+    KEEP_ALIVE_ID,
+    GEOMETRY_MSGS_POSE_2D_ID
+};
+
+#define RX_BUF_LEN 1024
+#define MAX_KEEP_ALIVE_TIMOUT_MS 2000
+#define KEEP_ALIVE_CHECK_PERIOD_MS 500

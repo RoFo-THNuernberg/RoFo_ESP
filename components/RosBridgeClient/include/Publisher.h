@@ -27,7 +27,7 @@ namespace ros
         uint8_t *pkt_buffer = new uint8_t[_topic.size() + msg.getSize() +  2];
         int pkt_len = 0;
         
-        pkt_buffer[0] = msg.getMsgType();
+        pkt_buffer[0] = PUBLISH_ID;
         pkt_len++;
 
         memcpy(pkt_buffer + pkt_len, _topic.c_str(), _topic.size());

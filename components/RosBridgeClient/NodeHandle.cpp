@@ -11,6 +11,7 @@ namespace ros
     NodeHandle::NodeHandle(std::string ros_namespace) : _ros_namespace{ros_namespace} 
     {   
         _keep_alive_time_us = esp_timer_get_time();
+        _last_send_keep_alive_us = esp_timer_get_time();
 
         _sock = Socket::init();
 
@@ -69,7 +70,9 @@ namespace ros
 
     int NodeHandle::_send_keep_alive()
     {   
-        if(_protocol_restarting == false)
+        uint64_t time_now_us = esp_timer_get_time();
+
+        if(_protocol_restarting == false && (time_now_us - _last_send_keep_alive_us) / 1000 > KEEP_ALIVE_SEND_PERIOD_MS)
         {
             uint8_t pkt_buffer[1 + sizeof(uint64_t)];
             int pkt_len = 0;
@@ -77,8 +80,10 @@ namespace ros
             pkt_buffer[0] = KEEP_ALIVE_ID;
             pkt_len++;
 
-            *(uint64_t*)(pkt_buffer + pkt_len) = (uint64_t)esp_timer_get_time();
+            *(uint64_t*)(pkt_buffer + pkt_len) = (uint64_t)time_now_us;
             pkt_len += sizeof(uint64_t);
+
+            _last_send_keep_alive_us = time_now_us;
 
             return _sock->socket_send(pkt_buffer, pkt_len);
         }
@@ -159,7 +164,7 @@ namespace ros
 
                     break;
                 }
-                case GEOMETRY_MSGS_POSE_2D_ID:
+                case PUBLISH_ID:
                 {
                     rx_buffer_ptr += 1;
 
@@ -174,9 +179,11 @@ namespace ros
                     {
                         sub->msg_type.deserialize(rx_buffer_ptr);
                         rx_buffer_ptr += sub->msg_type.getSize();
-
+                        ESP_LOGI("test", "hello1");
                         sub->callback_function(sub->msg_type);
-                    }
+                    } 
+                    else
+                        socket_len_err = -1;
 
                     break;
                 }

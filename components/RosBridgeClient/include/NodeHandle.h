@@ -14,7 +14,7 @@
 
 #include <string>
 #include <vector>
-#include <memory>
+#include <functional>
 
 namespace ros
 {  
@@ -27,7 +27,7 @@ namespace ros
             ~NodeHandle();
 
             template <typename T> Publisher<T> advertise(std::string const& topic);
-            template <typename T> void subscribe(std::string topic, void (*callback_function)(ros_msgs::RosMsg&));
+            template <typename T> void subscribe(std::string topic, std::function<void(ros_msgs::RosMsg const&)> callback_function);
 
         private:
             int _send_init();
@@ -54,6 +54,7 @@ namespace ros
 
             uint64_t _server_time_difference_us;
             uint64_t _keep_alive_time_us;
+            uint64_t _last_send_keep_alive_us;
     };
 
     template <typename T> Publisher<T> NodeHandle::advertise(std::string const& topic)
@@ -63,7 +64,7 @@ namespace ros
         return new_pub;
     }
 
-    template <typename T> void NodeHandle::subscribe(std::string topic, void (*callback_function)(ros_msgs::RosMsg&))
+    template <typename T> void NodeHandle::subscribe(std::string topic, std::function<void(ros_msgs::RosMsg const&)>callback_function)
     {   
         ros_msgs::RosMsg* msg_type = (ros_msgs::RosMsg*)new T;
         Subscriber* new_sub = new Subscriber(topic, *msg_type, callback_function);

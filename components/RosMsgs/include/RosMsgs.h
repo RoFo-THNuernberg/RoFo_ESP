@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+
 #include "msg_id.h"
 #include "SmartBufferPtr.h"
 
@@ -11,22 +12,29 @@ namespace ros_msgs
         virtual ~RosMsg() {}
         virtual void serialize(uint8_t* buffer) const = 0;
         virtual size_t getSize() const = 0;
-        virtual MSG_ID getMsgType() const = 0;
         virtual void deserialize(SmartBufferPtr bfr) = 0; 
     };
 
     struct String : RosMsg
     {   
         public:
-            String(std::string data) : size{data.size() + 1}, data{data} {}
+            String(std::string data) : data{data} {}
 
+            size_t getSize() const override 
+            { 
+                return data.size() + 1; 
+            }
+            
             void serialize(uint8_t* buffer) const override 
             { 
                 memcpy(buffer, data.c_str(), data.size());
             }
-            size_t getSize() const override { return size; }
+            
+            void deserialize(SmartBufferPtr bfr)
+            {
+                data << bfr;
+            }
 
-            size_t const size;;
             std::string data;
     };
 
@@ -39,11 +47,6 @@ namespace ros_msgs
             size_t getSize() const override 
             { 
                 return _msg_size; 
-            }
-
-            MSG_ID getMsgType() const override
-            {
-                return _msg_type;
             }
 
             void serialize(uint8_t* buffer) const override 
@@ -70,8 +73,75 @@ namespace ros_msgs
             float theta;
 
         private:
-            MSG_ID const _msg_type = GEOMETRY_MSGS_POSE_2D_ID;
             size_t const _msg_size = 12;
+    };
+
+    struct Twist2D : RosMsg
+    {
+        public:
+            Twist2D(float x, float w) : x{x}, w{w} {}
+            Twist2D() : x{0}, w{0} {}
+
+            size_t getSize() const override 
+            { 
+                return _msg_size; 
+            }
+
+            void serialize(uint8_t* buffer) const override 
+            { 
+                float* buff = (float*)buffer;
+                buff[0] = x;
+                buff[1] = w;
+            }
+
+            void deserialize(SmartBufferPtr bfr) override
+            {
+                x << bfr;
+                bfr += 4;
+
+                w << bfr;
+                bfr += 4;
+            }       
+
+            float x;
+            float w;
+
+        private:
+            size_t const _msg_size = 8;
+    };
+
+    struct Point2D : RosMsg
+    {   
+        public:
+            Point2D(float x, float y) : x{x}, y{y} {}
+            Point2D() : x{0}, y{0} {}
+
+            size_t getSize() const override 
+            { 
+                return _msg_size; 
+            }
+
+            void serialize(uint8_t* buffer) const override 
+            { 
+                float* buff = (float*)buffer;
+                buff[0] = x;
+                buff[1] = y;
+            }
+
+            void deserialize(SmartBufferPtr bfr) override
+            {
+                x << bfr;
+                bfr += 4;
+
+                y << bfr;
+                bfr += 4;
+            }
+
+            float x;
+            float y;
+
+        private:
+            size_t const _msg_size = 8;
     };
 
 }

@@ -53,14 +53,10 @@ extern "C" void app_main(void)
       ros_msgs::Pose2D x = pose_sensor->get_Pose();
       printf("X: %f, Y: %f, Theta: %f\n", x.x, x.y,  x.theta);
 
-      char measurement[128];
-      sprintf(measurement, "X: %f, Y: %f, Theta: %f", x.x, x.y,  x.theta);
-
       ros_msgs::Pose2D pose(x.x, x.y, x.theta);
 
       pub.publish(pose);
 
       vTaskDelay(1000 / portTICK_PERIOD_MS);
-      //state_machine.set_goal_point(ros_msgs::Point2D());
   }
 }

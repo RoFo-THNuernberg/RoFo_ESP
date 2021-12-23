@@ -39,80 +39,62 @@ namespace MARVELMIND
 
     const uart_port_t Marvelmind::_uart_port{UART_NUM_2};
     const uart_config_t Marvelmind::_uart_conf = 
-        {
-            .baud_rate = UART_BAUDRATE,
-            .data_bits = UART_DATA_8_BITS,
-            .parity    = UART_PARITY_DISABLE,
-            .stop_bits = UART_STOP_BITS_1,
-            .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
-            .rx_flow_ctrl_thresh = 0,
-            .source_clk = UART_SCLK_APB     
-        };
-        
-    QueueHandle_t Marvelmind::_pose_queue{};
-
-
-    void Marvelmind::_read_new_data(void *arg) 
     {
+        .baud_rate = UART_BAUDRATE,
+        .data_bits = UART_DATA_8_BITS,
+        .parity    = UART_PARITY_DISABLE,
+        .stop_bits = UART_STOP_BITS_1,
+        .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+        .rx_flow_ctrl_thresh = 0,
+        .source_clk = UART_SCLK_APB     
+    };
+
+    Marvelmind::Marvelmind() 
+    {   
+        ESP_ERROR_CHECK(uart_driver_install(_uart_port, UART_RX_BUFFER, 0, 0, NULL, 0));
+
+        ESP_ERROR_CHECK(uart_param_config(_uart_port, &_uart_conf));
+
+        ESP_ERROR_CHECK(uart_set_pin(_uart_port, UART_TX_PIN, UART_RX_PIN, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
+    }
+
+    SensorPose& Marvelmind::init()
+    {
+        if(_sensor == nullptr)
+            _sensor = new Marvelmind;
+
+        return *_sensor;
+    }
+
+    ros_msgs::Pose2D Marvelmind::get_Pose() {
+
         uint8_t rx_buffer[UART_RX_BUFFER];
-        ros_msgs::Pose2D measured_pose;
 
-        while(1) 
+        int len = uart_read_bytes(_uart_port, rx_buffer, UART_RX_BUFFER, 0);
+
+        for(int i = 0; i < len;)
         {
-            int len = uart_read_bytes(_uart_port, rx_buffer, UART_RX_BUFFER, 20 / portTICK_RATE_MS);
 
-            for(int i = 0; i < len;)
+            Marvelmind_Msg_Header *new_data_header = (Marvelmind_Msg_Header*)(rx_buffer + i);
+
+            if(len > 0 && new_data_header->destination_addr == 0xFF && new_data_header->packet_type == 0x47)
             {
 
-                Marvelmind_Msg_Header *new_data_header = (Marvelmind_Msg_Header*)(rx_buffer + i);
-
-                if(len > 0 && new_data_header->destination_addr == 0xFF && new_data_header->packet_type == 0x47)
+                switch(new_data_header->packet_identifier)
                 {
+                    case 0x0011:
+                        Marvelmind_Rx_Data *new_data = (Marvelmind_Rx_Data*)(rx_buffer + i);
 
-                    switch(new_data_header->packet_identifier)
-                    {
-                        case 0x0011:
-                            Marvelmind_Rx_Data *new_data = (Marvelmind_Rx_Data*)(rx_buffer + i);
+                        _current_pose.x = static_cast<float>(new_data->x_coordinate_mm) / 10;
+                        _current_pose.y = static_cast<float>(new_data->y_coordinate_mm) / 10;
+                        _current_pose.theta = static_cast<float>(new_data->hedgehog_orientation_raw & 0xFFF) / 10;
 
-                            measured_pose.x = static_cast<float>(new_data->x_coordinate_mm) / 10;
-                            measured_pose.y = static_cast<float>(new_data->y_coordinate_mm) / 10;
-                            measured_pose.theta = static_cast<float>(new_data->hedgehog_orientation_raw & 0xFFF) / 10;
-
-                            xQueueOverwrite(_pose_queue, &measured_pose);
-                            break;
-                    }
+                        break;
                 }
-
-                i += new_data_header->packet_size + sizeof(Marvelmind_Msg_Header);    
             }
 
-            vTaskDelay(50 / portTICK_PERIOD_MS);
+            i += new_data_header->packet_size + sizeof(Marvelmind_Msg_Header);    
         }
-        vTaskDelete(NULL);
-    }
-
-    esp_err_t Marvelmind::init() 
-    {   
-        esp_err_t status = ESP_OK;
-
-        status |= uart_driver_install(_uart_port, UART_RX_BUFFER, 0, 0, NULL, 0);
-
-        if(status == ESP_OK)
-            status |= uart_param_config(_uart_port, &_uart_conf);
-
-        if(status == ESP_OK)
-            status |= uart_set_pin(_uart_port, UART_TX_PIN, UART_RX_PIN, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
-
-        if(status == ESP_OK) {
-            _pose_queue = xQueueCreate(1, sizeof(ros_msgs::Pose2D));
-            xTaskCreate(_read_new_data, "read_new_data", 2048, NULL, 10, NULL);
-        }
-
-        return status;
-    }
-
-    const ros_msgs::Pose2D& Marvelmind::get_Pose() {
-        xQueuePeek(_pose_queue, &_current_pose, 0);
 
         return _current_pose;
     }

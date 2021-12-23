@@ -18,13 +18,12 @@ namespace ros
 
         private:
             const std::string _topic;
-            Socket *_sock;
+            Socket& _sock;
     };
-
-
+    
     template <typename T> void Publisher<T>::publish(const T& msg)
     {   
-        uint8_t *pkt_buffer = new uint8_t[_topic.size() + msg.getSize() +  2];
+        uint8_t pkt_buffer[_topic.size() + msg.getSize() +  2];
         int pkt_len = 0;
         
         pkt_buffer[0] = PUBLISH_ID;
@@ -39,6 +38,6 @@ namespace ros
         msg.serialize(pkt_buffer + pkt_len);
         pkt_len += msg.getSize();
 
-        _sock->socket_send(pkt_buffer, pkt_len);
+        _sock.socket_send(pkt_buffer, pkt_len);
     }
 }

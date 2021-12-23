@@ -4,21 +4,20 @@ namespace ros
 {   
     #define TAG "NodeHandle"
 
+    NodeHandle* NodeHandle::_node_handle_obj = nullptr;
+
     SemaphoreHandle_t NodeHandle::_restart_mutx{};
     TaskHandle_t NodeHandle::_check_keep_alive_thread{};
     TaskHandle_t NodeHandle::_communication_handler_thread{};
 
-    NodeHandle::NodeHandle(std::string ros_namespace) : _ros_namespace{ros_namespace} 
+    NodeHandle::NodeHandle(std::string ros_namespace) : _sock{Socket::init()}, _ros_namespace{ros_namespace}
     {   
         _keep_alive_time_us = esp_timer_get_time();
         _last_send_keep_alive_us = esp_timer_get_time();
 
-        _sock = Socket::init();
-
         _restart_mutx = xSemaphoreCreateMutex();
         
         _send_init();
-            
 
         xTaskCreate(_communication_handler, "_communication_handler", 4048, this, 5, &_communication_handler_thread);
         xTaskCreate(_check_keep_alive, "_check_keep_alive", 2048, this, 5, &_check_keep_alive_thread);
@@ -32,6 +31,14 @@ namespace ros
         _unsubscribe();
     }
 
+    NodeHandle& NodeHandle::init(std::string ros_namespace)
+    {
+        if(_node_handle_obj == nullptr)
+            _node_handle_obj = new NodeHandle(ros_namespace);
+
+        return *_node_handle_obj;
+    }
+
     void NodeHandle::_restart_protocol()
     {   
         if(xSemaphoreTake(_restart_mutx, 0) == pdPASS)
@@ -39,7 +46,7 @@ namespace ros
             ESP_LOGI(TAG, "Restarting Protocol!");
             _protocol_restarting = true;
 
-            _sock->restart_socket();
+            _sock.restart_socket();
             _send_init();
             _keep_alive_time_us = esp_timer_get_time();
 
@@ -65,7 +72,7 @@ namespace ros
 
         ESP_LOGI(TAG, "Sending initialize message!");
 
-        return _sock->socket_send(pkt_buffer, pkt_len);
+        return _sock.socket_send(pkt_buffer, pkt_len);
     }
 
     int NodeHandle::_send_keep_alive()
@@ -85,7 +92,7 @@ namespace ros
 
             _last_send_keep_alive_us = time_now_us;
 
-            return _sock->socket_send(pkt_buffer, pkt_len);
+            return _sock.socket_send(pkt_buffer, pkt_len);
         }
 
         return -1;
@@ -99,7 +106,10 @@ namespace ros
         {   
             if(node_handle->_send_keep_alive() != -1)
                 if(node_handle->_interpret_receive() == -1)
+                {
+                    ESP_LOGE(TAG,"Interpret Receive failed!");
                     node_handle->_restart_protocol();
+                }
                 
             
             vTaskDelay(50 / portTICK_PERIOD_MS);
@@ -116,7 +126,10 @@ namespace ros
         while(1)
         {
             if((esp_timer_get_time() - node_handle->_keep_alive_time_us) / 1000 > MAX_KEEP_ALIVE_TIMOUT_MS)
+            {
+                ESP_LOGE(TAG,"Check Keep Alive Timeout!");
                 node_handle->_restart_protocol();
+            }
 
             vTaskDelay(pdMS_TO_TICKS(KEEP_ALIVE_CHECK_PERIOD_MS));
         }
@@ -124,79 +137,98 @@ namespace ros
         vTaskDelete(NULL);
     }
 
-    int NodeHandle::_interpret_receive()
+   int NodeHandle::_interpret_receive()
     {   
-        int socket_len_err = 0;
+        int status_error = 0;
 
-        uint8_t* rx_buffer[64];
-        int rx_buffer_length = 0;
-        int rx_buffer_row = 0;
+        while(1)
+        {
 
-        do {
-            rx_buffer[rx_buffer_row] = new uint8_t[RX_BUF_LEN];
+            uint8_t msg_id;
 
-            socket_len_err = _sock->socket_receive(rx_buffer[rx_buffer_row], RX_BUF_LEN);
-            rx_buffer_length += socket_len_err;
+            status_error = _sock.socket_receive_nonblock(&msg_id, 1);
 
-            rx_buffer_row++;
-
-        } while (socket_len_err == RX_BUF_LEN && rx_buffer_row < 64);
-
-        SmartBufferPtr rx_buffer_ptr(rx_buffer, RX_BUF_LEN, rx_buffer_row);
-            
-
-        while(rx_buffer_length > rx_buffer_ptr - SmartBufferPtr(rx_buffer, RX_BUF_LEN, rx_buffer_row) && socket_len_err != -1)
-        {   
-            switch(rx_buffer_ptr[0])
+            if(status_error == SOCKET_FAIL)
             {
+                ESP_LOGE(TAG, "Error while receiving MSG ID");
+                return status_error;
+            } 
+            else if (status_error == 0)
+            {
+                return status_error;
+            }
+
+            switch(msg_id)
+            {   
                 case KEEP_ALIVE_ID:
-                {
-                    rx_buffer_ptr += 1;
+                {   
+                    uint64_t server_time;
+                    status_error = _sock.socket_receive((uint8_t*)&server_time, sizeof(server_time));
 
-                    uint64_t server_time = 0;
-                    server_time << rx_buffer_ptr;
-
-                    rx_buffer_ptr += sizeof(uint64_t);
+                    if(status_error == SOCKET_FAIL)
+                        break;
 
                     _keep_alive_time_us = esp_timer_get_time();
 
                     _server_time_difference_us = server_time - _keep_alive_time_us;
 
+                    ESP_LOGI(TAG, "Keep Alive! Server Time: %lld", server_time);
+
                     break;
                 }
                 case PUBLISH_ID:
-                {
-                    rx_buffer_ptr += 1;
-
+                {   
                     std::string topic;
-                    topic << rx_buffer_ptr;
+                    status_error = _sock.socket_receive_string(topic, 32);
 
-                    rx_buffer_ptr += topic.size() + 1;
+                    if(status_error == SOCKET_FAIL)
+                        break;
 
+                    //ESP_LOGI(TAG, "Received topic: %s", topic.c_str());
+                    
                     Subscriber* sub = _getSubscriber(topic);
 
                     if(sub != nullptr)
-                    {
-                        sub->msg_type.deserialize(rx_buffer_ptr);
-                        rx_buffer_ptr += sub->msg_type.getSize();
-                        ESP_LOGI("test", "hello1");
-                        sub->callback_function(sub->msg_type);
-                    } 
+                    {   
+                        int msg_len = sub->getMsg().getSize();
+
+                        if(msg_len == -1)
+                        {
+                            status_error = _sock.socket_receive((uint8_t*)&msg_len, sizeof(msg_len));
+
+                            if(status_error == SOCKET_FAIL)
+                                break;
+                        }
+
+                        uint8_t* rx_buffer = new uint8_t[msg_len];
+                        status_error = _sock.socket_receive(rx_buffer, msg_len);
+
+                        if(status_error == SOCKET_FAIL)
+                            break;
+
+                        sub->getMsg().deserialize(rx_buffer);
+
+                        delete[] rx_buffer;
+
+                        sub->callback_function(sub->getMsg());
+                    }
                     else
-                        socket_len_err = -1;
+                        status_error = SOCKET_FAIL;
 
                     break;
                 }
                 default:
-                    socket_len_err = -1;
+                    ESP_LOGE(TAG, "ID not found: %d", msg_id);
+                    status_error = SOCKET_FAIL;
                     break;
             }
+
+            if(status_error == SOCKET_FAIL)
+                break;
+
         }
 
-        for(int i = 0; i < rx_buffer_row; i++)
-            delete[] rx_buffer[i];
-
-        return socket_len_err;
+        return status_error;
     }
 
     Subscriber* NodeHandle::_getSubscriber(std::string const& topic)

@@ -5,7 +5,6 @@
 #include "Publisher.h"
 #include "Subscriber.h"
 #include "msg_id.h"
-#include "SmartBufferPtr.h"
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -22,14 +21,16 @@ namespace ros
     class NodeHandle 
     {
         public:
-            NodeHandle(std::string ros_namespace);
-            NodeHandle(const NodeHandle&) = delete;
-            ~NodeHandle();
+           static NodeHandle& init(std::string ros_namespace);
 
             template <typename T> Publisher<T> advertise(std::string const& topic);
             template <typename T> void subscribe(std::string topic, std::function<void(ros_msgs::RosMsg const&)> callback_function);
 
         private:
+        	NodeHandle(std::string ros_namespace);
+            NodeHandle(const NodeHandle&) = delete;
+            ~NodeHandle();
+
             int _send_init();
             int _send_keep_alive();
             void _restart_protocol();
@@ -41,7 +42,9 @@ namespace ros
             Subscriber* _getSubscriber(std::string const& topic);
             void _unsubscribe();
 
-            Socket *_sock;
+            static NodeHandle* _node_handle_obj;
+
+            Socket& _sock;
             std::string _ros_namespace;
             std::vector<Subscriber*> _subscriber;
 

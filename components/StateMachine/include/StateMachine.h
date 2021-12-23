@@ -14,7 +14,7 @@ class StateMachine
 
         void set_velocity(ros_msgs::RosMsg const&);
         void set_goal_point(ros_msgs::RosMsg const&);
-        void stop(ros_msgs::RosMsg const&);
+        void stop();
 
     private:
         State* _current_state;

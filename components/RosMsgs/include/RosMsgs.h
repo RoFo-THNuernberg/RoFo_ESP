@@ -1,18 +1,20 @@
 #pragma once
 
 #include <string>
+#include <cstring>
+
+#include "esp_log.h"
 
 #include "msg_id.h"
-#include "SmartBufferPtr.h"
 
 namespace ros_msgs
 {
-    struct RosMsg
+   struct RosMsg
     {   
         virtual ~RosMsg() {}
         virtual void serialize(uint8_t* buffer) const = 0;
         virtual size_t getSize() const = 0;
-        virtual void deserialize(SmartBufferPtr bfr) = 0; 
+        virtual void deserialize(uint8_t* buffer) = 0; 
     };
 
     struct String : RosMsg
@@ -22,7 +24,10 @@ namespace ros_msgs
 
             size_t getSize() const override 
             { 
-                return data.size() + 1; 
+                if(data.empty() == true)
+                    return 0; 
+                
+                return data.size();
             }
             
             void serialize(uint8_t* buffer) const override 
@@ -30,19 +35,19 @@ namespace ros_msgs
                 memcpy(buffer, data.c_str(), data.size());
             }
             
-            void deserialize(SmartBufferPtr bfr)
+            void deserialize(uint8_t* buffer)
             {
-                data << bfr;
+                data.assign((char*)buffer);
             }
 
             std::string data;
     };
 
-    struct Pose2D : RosMsg
+    struct Pose2DSim : RosMsg
     {   
         public:
-            Pose2D(float x, float y, float theta) : x{x}, y{y}, theta{theta} {}
-            Pose2D() : x{0}, y{0}, theta{0} {}
+            Pose2DSim(float x, float y, float theta) : x{x}, y{y}, theta{theta} {}
+            Pose2DSim() : x{0}, y{0}, theta{0} {}
 
             size_t getSize() const override 
             { 
@@ -57,15 +62,13 @@ namespace ros_msgs
                 buff[2] = theta;
             }
 
-            void deserialize(SmartBufferPtr bfr) override
+            void deserialize(uint8_t* buffer) override
             {
-                x << bfr;
-                bfr += 4;
+                float* buff = (float*)buffer;
 
-                y << bfr;
-                bfr += 4;
-
-                theta << bfr;
+                x = buff[0];
+                y = buff[1];
+                theta = buff[2];
             }
 
             float x;
@@ -76,11 +79,11 @@ namespace ros_msgs
             size_t const _msg_size = 12;
     };
 
-    struct Twist2D : RosMsg
-    {
+    struct Pose2D : RosMsg
+    {   
         public:
-            Twist2D(float x, float w) : x{x}, w{w} {}
-            Twist2D() : x{0}, w{0} {}
+            Pose2D(double x, double y, double theta) : x{x}, y{y}, theta{theta} {}
+            Pose2D() : x{0}, y{0}, theta{0} {}
 
             size_t getSize() const override 
             { 
@@ -89,32 +92,127 @@ namespace ros_msgs
 
             void serialize(uint8_t* buffer) const override 
             { 
-                float* buff = (float*)buffer;
+                double* buff = (double*)buffer;
                 buff[0] = x;
+                buff[1] = y;
+                buff[2] = theta;
+            }
+
+            void deserialize(uint8_t* buffer) override
+            {
+                double* buff = (double*)buffer;
+
+                x = buff[0];
+                y = buff[1];
+                theta = buff[2];
+            }
+
+            void operator=(Pose2D const& pose)
+            {
+                x = pose.x;
+                y = pose.y;
+                theta = pose.theta;
+            }
+
+            void operator=(Pose2DSim const& pose)
+            {
+                x = pose.x;
+                y = pose.y;
+                theta = pose.theta;
+            }
+
+            double x;
+            double y;
+            double theta;
+
+        private:
+            size_t const _msg_size = 24;
+    };
+
+    struct Twist2D : RosMsg
+    {
+        public:
+            explicit Twist2D(double x, double w) : v{x}, w{w} {}
+            Twist2D() : v{0}, w{0} {}
+
+            size_t getSize() const override 
+            { 
+                return _msg_size; 
+            }
+
+            void serialize(uint8_t* buffer) const override 
+            { 
+                double* buff = (double*)buffer;
+                buff[0] = v;
                 buff[1] = w;
             }
 
-            void deserialize(SmartBufferPtr bfr) override
+            void deserialize(uint8_t* buffer) override
             {
-                x << bfr;
-                bfr += 4;
+                double* buff = (double*)buffer;
 
-                w << bfr;
-                bfr += 4;
+                v = buff[0];
+                w = buff[1];
             }       
 
-            float x;
-            float w;
+            void operator=(Twist2D const& velocity)
+            {  
+                v = velocity.v;
+                w = velocity.w;
+            }
+
+            void operator=(int i)
+            {  
+                v = i;
+                w = i;
+            }
+
+            double v;
+            double w;
 
         private:
-            size_t const _msg_size = 8;
+            size_t const _msg_size = 16;
     };
 
     struct Point2D : RosMsg
     {   
         public:
-            Point2D(float x, float y) : x{x}, y{y} {}
+            Point2D(double x, double y) : x{x}, y{y} {}
             Point2D() : x{0}, y{0} {}
+
+            size_t getSize() const override 
+            { 
+                return _msg_size; 
+            }
+
+            void serialize(uint8_t* buffer) const override 
+            { 
+                double* buff = (double*)buffer;
+                buff[0] = x;
+                buff[1] = y;
+            }
+
+            void deserialize(uint8_t* buffer) override
+            {
+                double* buff = (double*)buffer;
+
+                x = buff[0];
+                y = buff[1];
+            }
+
+            double x;
+            double y;
+
+        private:
+            size_t const _msg_size = 16;
+    };
+
+    struct TrajectoryStateVector : RosMsg
+    {
+        public:
+            explicit TrajectoryStateVector(float x, float y, float dx, float dy, float ddx, float ddy) : x{x}, y{y}, dx{dx}, 
+                dy{dy}, ddx{ddx}, ddy{ddy} {}
+            TrajectoryStateVector() : x{0}, y{0}, dx{0}, dy{0}, ddx{0}, ddy{0} {} 
 
             size_t getSize() const override 
             { 
@@ -126,22 +224,84 @@ namespace ros_msgs
                 float* buff = (float*)buffer;
                 buff[0] = x;
                 buff[1] = y;
+                buff[2] = dx;
+                buff[3] = dy;
+                buff[4] = ddx;
+                buff[5] = ddy;
             }
 
-            void deserialize(SmartBufferPtr bfr) override
-            {
-                x << bfr;
-                bfr += 4;
+            void deserialize(uint8_t* buffer) override
+            {   
+                float* buff = (float*)buffer;
 
-                y << bfr;
-                bfr += 4;
+                x = buff[0];
+                y = buff[1];
+                dx = buff[2];
+                dx = buff[3];
+                ddx = buff[4];
+                ddy = buff[5];
             }
 
             float x;
             float y;
+            float dx;
+            float dy;
+            float ddx;
+            float ddy;
 
         private:
-            size_t const _msg_size = 8;
+            size_t const _msg_size = 24;
+    };
+
+    struct Trajectory : RosMsg
+    {
+        public:
+            Trajectory() {}
+
+            size_t getSize() const
+            {
+                return _trajectory_points * _trajectory->getSize();
+            }
+
+            size_t getTrajectorySize() const
+            {
+                return _trajectory_points;
+            }
+
+            void serialize(uint8_t* buffer) const override
+            {   
+                *((uint32_t*)buffer) = _trajectory_points;
+                buffer += sizeof(_trajectory_points);
+
+                for(int i = 0; i < _trajectory_points; i++)
+                {
+                    _trajectory[i].serialize(buffer);
+                    buffer += _trajectory[i].getSize();
+                }
+            }
+
+            void deserialize(uint8_t* buffer) override
+            {
+                if(_trajectory != nullptr)
+                    delete[] _trajectory;
+                
+                _trajectory = new TrajectoryStateVector[_trajectory_points];
+
+                for(int i = 0; i < _trajectory_points; i++)
+                {
+                    _trajectory[i].deserialize(buffer);
+                    buffer += _trajectory[i].getSize();
+                }
+            }
+
+            ros_msgs::TrajectoryStateVector& operator[](int i) const
+            {
+                return _trajectory[i];
+            }
+
+        private:
+            uint32_t _trajectory_points;
+            TrajectoryStateVector* _trajectory = nullptr;
     };
 
 }

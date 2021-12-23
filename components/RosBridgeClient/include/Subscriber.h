@@ -17,6 +17,11 @@ namespace ros
                 delete &msg_type;
             }
 
+            ros_msgs::RosMsg& getMsg()
+            {
+                return msg_type;
+            }
+
             std::string topic;
             ros_msgs::RosMsg& msg_type;
             std::function<void(ros_msgs::RosMsg const&)> callback_function;

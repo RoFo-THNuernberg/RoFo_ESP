@@ -127,7 +127,8 @@ namespace ros
         {
             if((esp_timer_get_time() - node_handle->_keep_alive_time_us) / 1000 > MAX_KEEP_ALIVE_TIMOUT_MS)
             {
-                ESP_LOGE(TAG,"Check Keep Alive Timeout!");
+                ESP_LOGE(TAG, "Check Keep Alive Timeout!");
+                ESP_LOGE(TAG, "Current Time: %lld, Last Keep_Alive: %lld", esp_timer_get_time(), node_handle->_keep_alive_time_us);
                 node_handle->_restart_protocol();
             }
 
@@ -150,7 +151,7 @@ namespace ros
 
             if(status_error == SOCKET_FAIL)
             {
-                ESP_LOGE(TAG, "Error while receiving MSG ID");
+                ESP_LOGE(TAG, "Error while receiving MSG ID (errno: %d)", errno);
                 return status_error;
             } 
             else if (status_error == 0)

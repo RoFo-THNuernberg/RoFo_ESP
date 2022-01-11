@@ -11,6 +11,7 @@ OutputVelocity& OutputVelocitySim::init(ros::NodeHandle& node_handle)
 }
 
 void OutputVelocitySim::setVelocity(ros_msgs::Twist2D const& velocity)
-{
+{   
+    _current_velocity = velocity;
     _publisher.publish(velocity);
 }

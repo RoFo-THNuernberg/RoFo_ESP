@@ -2,8 +2,10 @@
 
 #include <string>
 #include <cstring>
+#include <array>
 
 #include "esp_log.h"
+#include "math.h"
 
 #include "msg_id.h"
 
@@ -46,7 +48,11 @@ namespace ros_msgs
     struct Pose2DSim : RosMsg
     {   
         public:
-            Pose2DSim(float x, float y, float theta) : x{x}, y{y}, theta{theta} {}
+            Pose2DSim(float x, float y, float theta) : x{x}, y{y}, theta{theta} 
+            {
+                //Keep theta between -pi and pi
+                theta = atan2(sin(theta), cos(theta));
+            }
             Pose2DSim() : x{0}, y{0}, theta{0} {}
 
             size_t getSize() const override 
@@ -69,6 +75,9 @@ namespace ros_msgs
                 x = buff[0];
                 y = buff[1];
                 theta = buff[2];
+
+                //Keep theta between -pi and pi
+                theta = atan2(sin(theta), cos(theta));
             }
 
             float x;
@@ -82,7 +91,12 @@ namespace ros_msgs
     struct Pose2D : RosMsg
     {   
         public:
-            Pose2D(double x, double y, double theta) : x{x}, y{y}, theta{theta} {}
+            Pose2D(double x, double y, double theta) : x{x}, y{y}, theta{theta} 
+            {
+                //Keep theta between -pi and pi
+                theta = atan2(sin(theta), cos(theta));
+            }
+
             Pose2D() : x{0}, y{0}, theta{0} {}
 
             size_t getSize() const override 
@@ -105,6 +119,9 @@ namespace ros_msgs
                 x = buff[0];
                 y = buff[1];
                 theta = buff[2];
+
+                //Keep theta between -pi and pi
+                theta = atan2(sin(theta), cos(theta));
             }
 
             void operator=(Pose2D const& pose)
@@ -112,6 +129,9 @@ namespace ros_msgs
                 x = pose.x;
                 y = pose.y;
                 theta = pose.theta;
+
+                //Keep theta between -pi and pi
+                theta = atan2(sin(theta), cos(theta));
             }
 
             void operator=(Pose2DSim const& pose)
@@ -119,6 +139,9 @@ namespace ros_msgs
                 x = pose.x;
                 y = pose.y;
                 theta = pose.theta;
+
+                //Keep theta between -pi and pi
+                theta = atan2(sin(theta), cos(theta));
             }
 
             double x;
@@ -304,4 +327,5 @@ namespace ros_msgs
             TrajectoryStateVector* _trajectory = nullptr;
     };
 
+    Pose2D operator+(ros_msgs::Pose2D pose, std::array<float, 3> vector);
 }

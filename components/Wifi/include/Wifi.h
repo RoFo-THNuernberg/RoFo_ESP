@@ -9,19 +9,17 @@
 #include "esp_event.h"
 #include "esp_log.h"
 
-namespace WIFI
-{
-    class Wifi {
-        public:
-            Wifi() {};
-            esp_err_t init();
-            esp_err_t begin();
 
-        private:
-            static void _event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data);
+class Wifi {
+    public:
+        Wifi() {};
+        esp_err_t init();
+        esp_err_t begin();
 
-            static EventGroupHandle_t _wifi_event_group;
-            const static wifi_init_config_t _wifi_init_config;
-            static wifi_config_t _wifi_config;
-    };
+    private:
+        static void _event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data);
+
+        static EventGroupHandle_t _wifi_event_group;
+        const static wifi_init_config_t _wifi_init_config;
+        static wifi_config_t _wifi_config;
 };

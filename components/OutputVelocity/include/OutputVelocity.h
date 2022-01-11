@@ -8,11 +8,12 @@ class OutputVelocity
         virtual ~OutputVelocity() {}
 
         static OutputVelocity& getOutput();
-
+        
         virtual void setVelocity(ros_msgs::Twist2D const& velocity) = 0;
+        ros_msgs::Twist2D getVelocity();
 
     protected:
         static OutputVelocity* _output_velocity;
-
+        ros_msgs::Twist2D _current_velocity;
 
 };

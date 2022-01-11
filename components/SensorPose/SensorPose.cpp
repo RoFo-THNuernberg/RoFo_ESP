@@ -1,8 +1,13 @@
 #include "SensorPose.h"
 
-SensorPose* SensorPose::_sensor = nullptr;
+SensorPose* SensorPose::_global_sensor = nullptr;
 
-SensorPose& SensorPose::getSensor()
+void SensorPose::setGlobalSensor(SensorPose* global_sensor)
 {
-    return *_sensor;
+    _global_sensor = global_sensor;
+}
+
+SensorPose& SensorPose::getGlobalSensor()
+{
+    return *_global_sensor;
 }

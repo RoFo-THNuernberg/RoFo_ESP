@@ -4,13 +4,13 @@
 
 class SensorPose {
     public:
-        virtual ~SensorPose() {}
-
-        static SensorPose& getSensor();
-
-        virtual ros_msgs::Pose2D get_Pose() = 0;
+        static SensorPose& getGlobalSensor();
+        static void setGlobalSensor(SensorPose* global_sensor);
+        virtual ros_msgs::Pose2D getPose() = 0;
 
     protected:
-        static SensorPose* _sensor;
+        virtual ~SensorPose() {}
+        static SensorPose* _global_sensor;
+        
 };
 

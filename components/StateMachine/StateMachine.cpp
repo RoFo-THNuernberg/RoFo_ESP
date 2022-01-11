@@ -10,7 +10,7 @@ StateMachine::StateMachine() : _current_state{new Idle} {}
 
 void StateMachine::setState(State* new_state)
 {
-    ESP_LOGV(TAG, "%s -> %s", _current_state->getState().c_str(), new_state->getState().c_str());
+    ESP_LOGI(TAG, "%s -> %s", _current_state->getState().c_str(), new_state->getState().c_str());
 
     delete _current_state;
     _current_state = new_state;

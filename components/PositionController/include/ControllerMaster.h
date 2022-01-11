@@ -19,8 +19,10 @@
 class ControllerMaster
 {
     public:
-        static void start_controller(PositionController* pos_controller, std::function<void()>callback_function);
-        static void stop_controller();
+        void start_controller(PositionController* pos_controller, std::function<void()>destination_reached_callback);
+        void stop_controller();
+
+        static ControllerMaster& getControllerMaster();
 
     private:
         ControllerMaster();
@@ -32,13 +34,13 @@ class ControllerMaster
         static ControllerMaster* _controller_obj;
 
         PositionController* _pos_controller;
-        static SemaphoreHandle_t _pos_controller_mutx;
+        SemaphoreHandle_t _pos_controller_mutx;
 
-        std::function<void()>_callback_function;
+        std::function<void()>_destination_reached_callback;
 
         OutputVelocity& _output_velocity;
         SensorPose& _sensor_pose;
 
-        static TimerHandle_t _control_loop_timer_handle;
+        TimerHandle_t _control_loop_timer_handle;
         bool _timer_is_stopped = true;
 };

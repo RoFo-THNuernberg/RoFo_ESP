@@ -3,9 +3,9 @@
 approxLinController::approxLinController(float damping_coefficient, float natural_frequency, ros_msgs::Trajectory const& trajectory) : 
     _damping_coefficient{damping_coefficient}, _natural_frequency{natural_frequency}, _trajectory{trajectory} {}
 
-ros_msgs::Twist2D approxLinController::update(ros_msgs::Pose2D const& actual_pose)
+ros_msgs_lw::Twist2D approxLinController::update(ros_msgs_lw::Pose2D const& actual_pose)
 {   
-    ros_msgs::Twist2D output_vel;
+    ros_msgs_lw::Twist2D output_vel;
 
     if(_trajectory_cntr < _trajectory.getTrajectorySize())
     {

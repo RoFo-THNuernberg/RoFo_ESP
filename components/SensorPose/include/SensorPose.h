@@ -1,16 +1,24 @@
 #pragma once
 
-#include "RosMsgs.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/queue.h"
+
+#include "RosMsgsLw.h"
 
 class SensorPose {
     public:
-        static SensorPose& getGlobalSensor();
-        static void setGlobalSensor(SensorPose* global_sensor);
-        virtual ros_msgs::Pose2D getPose() = 0;
+        bool getPose(ros_msgs_lw::Pose2D& current_pose) const;
+
+        virtual void reInit() = 0;
 
     protected:
-        virtual ~SensorPose() {}
-        static SensorPose* _global_sensor;
+        SensorPose();
+        ~SensorPose();
+
+        QueueHandle_t _current_pose_queue;
+
+    private:
+        SensorPose(SensorPose const&) = delete;
         
 };
 

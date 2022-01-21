@@ -3,9 +3,9 @@
 dynInOutLinController::dynInOutLinController(float kp_1, float kp_2, float kd_1, float kd_2, ros_msgs::Trajectory const& trajectory) : 
     _kp_1{kp_1}, _kp_2{kp_2}, _kd_1{kd_1}, _kd_2{kd_2}, _prev_time_us{(uint64_t)esp_timer_get_time()}, _prev_velocity{0.0001}, _prev_acceleration{0}, _trajectory{trajectory} {}
 
-ros_msgs::Twist2D dynInOutLinController::update(ros_msgs::Pose2D const& actual_pose)
+ros_msgs_lw::Twist2D dynInOutLinController::update(ros_msgs_lw::Pose2D const& actual_pose)
 {   
-    ros_msgs::Twist2D output_vel;
+    ros_msgs_lw::Twist2D output_vel;
 
     if(_trajectory_cntr < _trajectory.getTrajectorySize())
     {

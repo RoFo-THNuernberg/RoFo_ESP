@@ -3,6 +3,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "driver/timer.h"
+#include "driver/gpio.h"
 #include "esp_timer.h"
 
 #include "Motor.h"
@@ -11,42 +12,27 @@
 class MotorController
 {
     public:
-        static MotorController& getMotorControllerA();
-        static MotorController& getMotorControllerB();
+        static MotorController& init();
 
-        void setVelocity(float setpoint_velocity);
-
-        int64_t loop_time_us;
-        float actual_velocity;
-        float output_duty;
+        void setVelocity(float setpoint_velocity_a, float setpoint_velocity_b);
 
     private:
-        MotorController(Motor& motor, bool motor_dir, timer_idx_t timer_index);
+        MotorController();
         MotorController(MotorController const&) = delete;
         ~MotorController() {};
 
-        void _init();
-
         static void _motor_control_loop_task(void* pvParameters);
-        //static bool IRAM_ATTR _motor_control_loop(void* args);
-        static bool IRAM_ATTR _motor_control_notify(void* args);
+        static bool IRAM_ATTR _motor_control_interrupt(void* args);
 
         TaskHandle_t _control_loop_task;
 
-        static MotorController* _motor_controller_a;
-        static MotorController* _motor_controller_b;
+        static MotorController* _motor_controller;
 
-        Motor& _motor;
+        Motor& _motor_a;
+        Motor& _motor_b;
 
-        float _kp, _ki;
+        static gpio_config_t _enable_config;
+        gpio_num_t _enable_pin;
 
-        bool _motor_dir;
-
-        float _setpoint_velocity = 0;
-        int64_t _prev_time_us;
-        float _error_integral = 0;
-
-
-        timer_config_t _timer_config;
-        timer_idx_t _timer_index;
+        static timer_config_t _timer_config;
 };

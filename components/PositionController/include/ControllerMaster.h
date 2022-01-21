@@ -6,13 +6,14 @@
 #include "freertos/timers.h"
 
 #include "PositionController.h"
-#include "RosMsgs.h"
+#include "RosMsgsLw.h"
 #include "OutputVelocity.h"
 #include "SensorPose.h"
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/timers.h"
 #include "freertos/semphr.h"
+#include "freertos/task.h"
 #include "esp_err.h"
 
 
@@ -22,16 +23,19 @@ class ControllerMaster
         void start_controller(PositionController* pos_controller, std::function<void()>destination_reached_callback);
         void stop_controller();
 
-        static ControllerMaster& getControllerMaster();
+        static ControllerMaster& init(OutputVelocity& output_velocity, SensorPose& sensor_pose);
 
     private:
-        ControllerMaster();
+        ControllerMaster(OutputVelocity& ouput_velocity, SensorPose& sensor_pose);
         ControllerMaster(const ControllerMaster&) = delete;
         ~ControllerMaster();
 
-        static void _control_loop(TimerHandle_t);
+        static void _control_loop_timer(TimerHandle_t timer);
+        static void _control_loop_task(void* pvParameters);
 
         static ControllerMaster* _controller_obj;
+
+        uint64_t prev_time = 0;
 
         PositionController* _pos_controller;
         SemaphoreHandle_t _pos_controller_mutx;
@@ -42,5 +46,7 @@ class ControllerMaster
         SensorPose& _sensor_pose;
 
         TimerHandle_t _control_loop_timer_handle;
-        bool _timer_is_stopped = true;
+        TaskHandle_t _control_loop_task_handle;
+
+        bool _timer_is_stopped;
 };

@@ -5,41 +5,43 @@
 #include "esp_err.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
+#include "freertos/semphr.h"
 
 #include "driver/uart.h"
 
-#include "RosMsgs.h"
+#include "math.h"
+
+#include "RosMsgsLw.h"
 #include "SensorPose.h"
 #include "KalmanSensor.h"
-#include "matrix_math.h"
+#include "mat.h"
 
-class Marvelmind : public SensorPose, public KalmanSensor
+class Marvelmind : public KalmanSensor, public SensorPose
 {
     public:
-        static SensorPose& init();
-        ros_msgs::Pose2D getPose() override;
+        static Marvelmind& init();
 
-        bool newData() override;
-        //void calculateKalmanGain(std::array<std::array<float, 3>, 3> const& a_priori_cov) override;
-        //ros_msgs::Pose2D getPosterioriPose(ros_msgs::Pose2D const& a_priori_pose) override;
-        //std::array<std::array<float, 3>, 3> getPosterioriCov(std::array<std::array<float, 3>, 3> const&) override;
+        void reInit() override {}
+
+        bool calculateKalman(ros_msgs_lw::Pose2D const& a_priori_estimate, dspm::Mat const& a_priori_cov, ros_msgs_lw::Pose2D& a_posterior_estimate, dspm::Mat& a_posterior_cov) const override;
+        bool getInitialPose(ros_msgs_lw::Pose2D& initial_pose) const override;
+        void getMeasurementNoiseCov(dspm::Mat& measurement_cov) const override;
 
     private:
         Marvelmind();
         Marvelmind(Marvelmind const&) = delete;
-        ~Marvelmind() {}
+        ~Marvelmind();
 
         static void _uart_read_data_task(void* pvParameters);
 
         static Marvelmind* _marvelmind_sensor;
 
-        ros_msgs::Pose2D _current_pose;
+        QueueHandle_t _current_pose_queue;
 
-        bool _new_data_ready = false;
-
-        std::array<std::array<float, 3>, 3> const _measurement_noise_cov;
-        std::array<std::array<float, 3>, 3> _kalman_gain;
+        dspm::Mat const _measurement_noise_cov;
 
         static const uart_port_t _uart_port; 
         static const uart_config_t _uart_conf;
+
+        TaskHandle_t _uart_read_data_task_handle;
 };

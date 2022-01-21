@@ -1,19 +1,17 @@
 #pragma once
 
-#include "RosMsgs.h"
+#include "RosMsgsLw.h"
 
 class OutputVelocity
 {
     public:
         virtual ~OutputVelocity() {}
-
-        static OutputVelocity& getOutput();
         
-        virtual void setVelocity(ros_msgs::Twist2D const& velocity) = 0;
-        ros_msgs::Twist2D getVelocity();
+        virtual void setVelocity(ros_msgs_lw::Twist2D const& velocity) = 0;
+        ros_msgs_lw::Twist2D getVelocity() const;
 
     protected:
-        static OutputVelocity* _output_velocity;
-        ros_msgs::Twist2D _current_velocity;
+        static OutputVelocity* _output_velocity_obj;
+        ros_msgs_lw::Twist2D _current_velocity;
 
 };

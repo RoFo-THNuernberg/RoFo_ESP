@@ -14,16 +14,24 @@
 
 #define TICK_PER_S_TO_ROTATION_PER_S (1. / (10 * 63))
 
-
 Motor* Motor::_motor_a = nullptr;
 Motor* Motor::_motor_b = nullptr;
 
-Motor::Motor(mcpwm_unit_t mcpwm_unit, mcpwm_pin_config_t motor_pins) : _mcpwm_unit{mcpwm_unit}, _motor_pins{motor_pins}
+Motor::Motor(mcpwm_unit_t mcpwm_unit, mcpwm_pin_config_t motor_pins, bool motor_dir) : _motor_dir{motor_dir}, _mcpwm_unit{mcpwm_unit}, _motor_pins{motor_pins}
 {
     _mcpwm_timer = MCPWM_TIMER_0;
     _mcpwm_config = (mcpwm_config_t){ .frequency = MOTOR_PWM_FREQUENCY, .cmpr_a = 0, .cmpr_b = 0, .duty_mode = MCPWM_DUTY_MODE_0, .counter_mode = MCPWM_UP_COUNTER};
     _mcpwm_capture_config_0 = (mcpwm_capture_config_t) {.cap_edge = MCPWM_POS_EDGE, .cap_prescale = 1, .capture_cb = _encoder_callback, .user_data = this};
     _mcpwm_capture_config_1 = (mcpwm_capture_config_t) {.cap_edge = MCPWM_BOTH_EDGE, .cap_prescale = 1, .capture_cb = NULL, .user_data = NULL};
+
+    _kp = 50;
+    _ki = 500.0;
+    _prev_time_us = esp_timer_get_time();
+
+    ESP_ERROR_CHECK(mcpwm_set_pin(_mcpwm_unit, &_motor_pins));
+    ESP_ERROR_CHECK(mcpwm_init(_mcpwm_unit, _mcpwm_timer, &_mcpwm_config));
+    ESP_ERROR_CHECK(mcpwm_capture_enable_channel(_mcpwm_unit, MCPWM_SELECT_CAP0, &_mcpwm_capture_config_0));
+    ESP_ERROR_CHECK(mcpwm_capture_enable_channel(_mcpwm_unit, MCPWM_SELECT_CAP1, &_mcpwm_capture_config_1));
 }
 
 Motor& Motor::getMotorA()
@@ -50,10 +58,7 @@ Motor& Motor::getMotorA()
             .mcpwm_cap2_in_num = -1,  
         };
 
-
-        _motor_a = new Motor(MCPWM_UNIT_0, motor_pins);
-
-        _motor_a->_init();
+        _motor_a = new Motor(MCPWM_UNIT_0, motor_pins, true);
     }
         
     return *_motor_a;
@@ -82,23 +87,64 @@ Motor& Motor::getMotorB()
             .mcpwm_cap2_in_num = -1,  
         };
         
-        _motor_b = new Motor(MCPWM_UNIT_1, motor_pins);
-
-        _motor_b->_init();
+        _motor_b = new Motor(MCPWM_UNIT_1, motor_pins, false);
     }
         
     return *_motor_b;
 }
 
-void Motor::_init()
+void Motor::setVelocity(float setpoint_velocity)
 {
-    ESP_ERROR_CHECK(mcpwm_set_pin(_mcpwm_unit, &_motor_pins));
-    ESP_ERROR_CHECK(mcpwm_init(_mcpwm_unit, _mcpwm_timer, &_mcpwm_config));
-    ESP_ERROR_CHECK(mcpwm_capture_enable_channel(_mcpwm_unit, MCPWM_SELECT_CAP0, &_mcpwm_capture_config_0));
-    ESP_ERROR_CHECK(mcpwm_capture_enable_channel(_mcpwm_unit, MCPWM_SELECT_CAP1, &_mcpwm_capture_config_1));
+    _setpoint_velocity = setpoint_velocity;
 }
 
-void Motor::setDuty(float duty_cycle)
+void Motor::updatePIControl()
+{
+    //Input
+    float actual_velocity = getActualVelocity();
+
+    //Calculate Error
+    float error = 0;
+    if(_motor_dir)
+        error = actual_velocity - _setpoint_velocity;
+    else
+        error = _setpoint_velocity - actual_velocity;
+
+    //Calculate Proportional Output
+    float p_out = _kp * error;
+
+    //Calculate Integral Output
+    int64_t current_time_us = esp_timer_get_time();
+    int64_t delta_time_us = current_time_us - _prev_time_us;
+    _prev_time_us = current_time_us;
+
+    _error_integral += error * (float)delta_time_us / 1000000;
+
+    float i_out = _ki * _error_integral;
+
+    if(i_out > 100)
+        _error_integral = 100 / _ki;
+    else if (i_out < -100)
+        _error_integral = -100 / _ki;
+
+    //Calculate Ouput
+    float output_duty_cycle = p_out + i_out;
+
+    //Output
+    _setDuty(output_duty_cycle);
+}
+
+float Motor::getActualVelocity()
+{
+    if(_current_duty_cycle == 0 && _prev_pulse_period == _encoder_pulse_period)
+        _encoder_pulse_period = 0;
+
+    _prev_pulse_period = _encoder_pulse_period;
+
+    return (_encoder_pulse_period != 0) ? ((float)rtc_clk_apb_freq_get() / _encoder_pulse_period) * TICK_PER_S_TO_ROTATION_PER_S : 0;
+}
+
+void Motor::_setDuty(float duty_cycle)
 {   
     _current_duty_cycle = duty_cycle;
 
@@ -119,16 +165,6 @@ void Motor::setDuty(float duty_cycle)
         mcpwm_set_duty(_mcpwm_unit, _mcpwm_timer, MCPWM_GEN_A, 0);
         mcpwm_set_duty(_mcpwm_unit, _mcpwm_timer, MCPWM_GEN_B, 0);
     }
-}
-
-float Motor::getVelocity()
-{
-    if(_current_duty_cycle == 0 && _prev_pulse_period == _encoder_pulse_period)
-        _encoder_pulse_period = 0;
-
-    _prev_pulse_period = _encoder_pulse_period;
-
-    return (_encoder_pulse_period != 0) ? ((float)rtc_clk_apb_freq_get() / _encoder_pulse_period) * TICK_PER_S_TO_ROTATION_PER_S : 0;
 }
 
 bool IRAM_ATTR Motor::_encoder_callback(mcpwm_unit_t mcpwm_unit, mcpwm_capture_channel_id_t cap_channel, const cap_event_data_t *edata, void *user_data)

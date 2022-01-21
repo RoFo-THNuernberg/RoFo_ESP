@@ -99,7 +99,10 @@ int Socket::socket_receive(uint8_t* rx_buffer, int recv_bytes)
         bytes_read = recv(_connection_fd, rx_buffer, recv_bytes, 0);
 
         if(bytes_read == SOCKET_FAIL && errno == EWOULDBLOCK)
+        {
             bytes_read = 0;
+            vTaskDelay(1 / portTICK_PERIOD_MS);
+        }
 
         recv_bytes -= bytes_read;
     } 
@@ -119,6 +122,9 @@ int Socket::socket_receive_string(std::string& new_string, int max_bytes)
         do
         {
             bytes_read = recv(_connection_fd, rx_buffer + i, 1, 0);
+
+            if(bytes_read == SOCKET_FAIL && errno == EWOULDBLOCK)
+                vTaskDelay(1 / portTICK_PERIOD_MS);
         } 
         while(bytes_read == SOCKET_FAIL && errno == EWOULDBLOCK);
 

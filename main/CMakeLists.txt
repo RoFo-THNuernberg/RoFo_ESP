@@ -1,3 +1,3 @@
 idf_component_register(SRCS "main.cpp"
                     INCLUDE_DIRS "."
-                    REQUIRES SensorPose Wifi RosBridgeClient RosMsgs StateMachine PositionController OutputVelocity MotorController nvs_flash)
+                    REQUIRES SensorPose Wifi RosBridgeClient RosMsgs StateMachine OutputVelocity MotorController PositionController nvs_flash)

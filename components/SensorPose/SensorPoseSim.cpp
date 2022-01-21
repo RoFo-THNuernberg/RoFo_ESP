@@ -15,14 +15,10 @@ SensorPose& SensorPoseSim::init(ros::NodeHandle& node_handle)
     return *_sensor_pose_sim;
 }
 
-ros_msgs::Pose2D SensorPoseSim::getPose()
-{
-    return _current_pose;
-}
-
-void SensorPoseSim::_setPose(ros_msgs::RosMsg const& pose)
+void SensorPoseSim::_setPose(ros_msgs::RosMsg const& pose_msg)
 {   
-    _current_pose = (ros_msgs::Pose2DSim&)pose;
+    ros_msgs_lw::Pose2D current_pose((ros_msgs::Pose2DSim&)pose_msg);
 
+    xQueueOverwrite(_current_pose_queue, &current_pose);
 }
 

@@ -1,13 +1,11 @@
 #include "OutputVelocity.h"
 
-OutputVelocity* OutputVelocity::_output_velocity = nullptr;
 
-OutputVelocity& OutputVelocity::getOutput()
-{
-    return *_output_velocity;
-}
+#define TAG "OutputVelocity"
 
-ros_msgs::Twist2D OutputVelocity::getVelocity()
+OutputVelocity* OutputVelocity::_output_velocity_obj = nullptr;
+
+ros_msgs_lw::Twist2D OutputVelocity::getVelocity() const
 {
     return _current_velocity;
 }

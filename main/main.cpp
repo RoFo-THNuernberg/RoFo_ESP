@@ -9,16 +9,19 @@
 #include "SensorPoseSim.h"
 #include "NodeHandle.h"
 #include "Publisher.h"
+#include "RosMsgsLw.h"
 #include "RosMsgs.h"
 #include "StateMachine.h"
-#include "ControllerMaster.h"
 #include "OutputVelocity.h"
 #include "OutputVelocitySim.h"
 #include "OutputVelocityImpl.h"
+#include "KalmanFilter.h"
 #include "MotorController.h"
+#include "ControllerMaster.h"
 
 #define TAG "Main"
-#define USE_SIM
+//#define USE_SIM
+#define KALMAN
 
 
 extern "C" void app_main(void)
@@ -36,52 +39,43 @@ extern "C" void app_main(void)
   ESP_ERROR_CHECK(wifi.init());
   ESP_ERROR_CHECK(wifi.begin());
 
-  //MotorController& motor_a = MotorController::getMotorControllerA();
-  //motor_a.setVelocity(0.5);
+  MotorController& motor_controller = MotorController::init();
 
   #ifdef USE_SIM
-    ros::NodeHandle& nh = ros::NodeHandle::init("turtle1");
-    SensorPose& pose_sensor = SensorPoseSim::init(nh);
-    SensorPose::setGlobalSensor(&pose_sensor);
-    OutputVelocity& output_velocity = OutputVelocitySim::init(nh);
+    ros::NodeHandle& node_handle = ros::NodeHandle::init("turtle1");
+    SensorPose& pose_sensor = SensorPoseSim::init(node_handle);
+    OutputVelocity& output_velocity = OutputVelocitySim::init(node_handle);
   #else
-    ros::NodeHandle& nh = ros::NodeHandle::init("robot_1");
-    SensorPose& pose_sensor = Marvelmind::init();
-    SensorPose::setGlobalSensor(&pose_sensor);
-    OutputVelocity& output_velocity = OutputVelocityImpl::init();
+    ros::NodeHandle& node_handle = ros::NodeHandle::init("robot_1");
+    OutputVelocity& output_velocity = OutputVelocityImpl::init(motor_controller);
+
+    #ifdef KALMAN
+      Marvelmind& marvelmind_sensor = Marvelmind::init();
+      SensorPose& pose_sensor = KalmanFilter::init({&marvelmind_sensor}, output_velocity);
+    #else
+      SensorPose& pose_sensor = Marvelmind::init();
+    #endif
   #endif
 
-  auto pub = nh.advertise<ros_msgs::Pose2D>("pose2D");
+  ControllerMaster& controller_master = ControllerMaster::init(output_velocity, pose_sensor);
 
-  StateMachine state_machine;
-  nh.subscribe<ros_msgs::Point2D>("goal_point", std::bind(&StateMachine::set_goal_point, &state_machine, std::placeholders::_1));
-  nh.subscribe<ros_msgs::Twist2D>("vel", std::bind(&StateMachine::set_velocity, &state_machine, std::placeholders::_1));
+  auto pub = node_handle.advertise<ros_msgs::Pose2D>("pose2D");
 
-  gpio_config_t en_pin = {
-    .pin_bit_mask = GPIO_SEL_23,
-    .mode = GPIO_MODE_OUTPUT,
-    .pull_up_en = GPIO_PULLUP_DISABLE,
-    .pull_down_en = GPIO_PULLDOWN_DISABLE,
-    .intr_type = GPIO_INTR_DISABLE
-  };
-
-  gpio_config(&en_pin);
-
-  gpio_set_level(GPIO_NUM_23, 1);
-  
+  StateMachine& state_machine = StateMachine::init(controller_master, output_velocity);
+  node_handle.subscribe<ros_msgs::Point2D>("goal_point", std::bind(&StateMachine::set_goal_point, &state_machine, std::placeholders::_1));
+  node_handle.subscribe<ros_msgs::Twist2D>("vel", std::bind(&StateMachine::set_velocity, &state_machine, std::placeholders::_1));
 
   while(1) 
   { 
-    ros_msgs::Pose2D x = pose_sensor.getPose();
-    printf("X: %f, Y: %f, Theta: %f\n", x.x, x.y,  x.theta);
+    ros_msgs_lw::Pose2D pose;
 
-    ros_msgs::Pose2D pose(x.x, x.y, x.theta);
+    if(pose_sensor.getPose(pose))
+      printf("X: %f, Y: %f, Theta: %f\n", pose.x, pose.y,  pose.theta);
 
-    pub.publish(pose);
+    ros_msgs::Pose2D pose_msg(pose);
 
-    //printf("actual vel: %f, ouput_duty: %f, loop time: %lld\n", motor_a.actual_velocity, motor_a.output_duty, motor_a.loop_time_us);
+    pub.publish(pose_msg);
 
-
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
+    vTaskDelay(250 / portTICK_PERIOD_MS);
   }
 }

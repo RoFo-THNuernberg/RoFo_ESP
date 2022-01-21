@@ -1,14 +1,25 @@
-#pragma once
+#pragma once 
 
-#include <array>    
+#include "freertos/FreeRTOS.h"
+#include "freertos/queue.h"
 
-#include "RosMsgs.h"
+#include "SensorPose.h"
+#include "RosMsgsLw.h"
+#include "mat.h"
 
 class KalmanSensor
 {
     public:
-        virtual bool newData() = 0;
-        //virtual void calculateKalmanGain(std::array<std::array<float, 3>, 3> const& a_priori_cov) = 0;
-        //virtual ros_msgs::Pose2D getPosterioriPose(ros_msgs::Pose2D const& a_priori_pose) = 0;
-        //virtual std::array<std::array<float, 3>, 3> getPosterioriCov(std::array<std::array<float, 3>, 3> const&) = 0;
+        KalmanSensor();
+        ~KalmanSensor();
+
+        //calculation of KalmanGain is located in the corresponding KalmanSensor in order to optimize processing time and memory usage 
+        virtual bool calculateKalman(ros_msgs_lw::Pose2D const& a_priori_estimate, dspm::Mat const& a_priori_cov, ros_msgs_lw::Pose2D& a_posterior_estimate, dspm::Mat& a_posterior_cov) const = 0;
+
+        //Implement function only for absolute sensors
+        virtual bool getInitialPose(ros_msgs_lw::Pose2D& initial_pose) const = 0;
+
+        //Implement function only for absolute sensors
+        virtual void getMeasurementNoiseCov(dspm::Mat& measurement_cov) const = 0;
+
 };

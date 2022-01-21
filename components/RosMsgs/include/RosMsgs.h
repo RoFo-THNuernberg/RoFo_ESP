@@ -9,6 +9,13 @@
 
 #include "msg_id.h"
 
+namespace ros_msgs_lw
+{
+    struct Pose2D;
+    struct Twist2D;
+    struct Point2D;
+}
+
 namespace ros_msgs
 {
    struct RosMsg
@@ -22,7 +29,7 @@ namespace ros_msgs
     struct String : RosMsg
     {   
         public:
-            String(std::string data) : data{data} {}
+            explicit String(std::string data) : data{data} {}
 
             size_t getSize() const override 
             { 
@@ -48,7 +55,7 @@ namespace ros_msgs
     struct Pose2DSim : RosMsg
     {   
         public:
-            Pose2DSim(float x, float y, float theta) : x{x}, y{y}, theta{theta} 
+            explicit Pose2DSim(float x, float y, float theta) : x{x}, y{y}, theta{theta} 
             {
                 //Keep theta between -pi and pi
                 theta = atan2(sin(theta), cos(theta));
@@ -85,17 +92,19 @@ namespace ros_msgs
             float theta;
 
         private:
-            size_t const _msg_size = 12;
+            static size_t const _msg_size;
     };
 
     struct Pose2D : RosMsg
     {   
         public:
-            Pose2D(double x, double y, double theta) : x{x}, y{y}, theta{theta} 
+            explicit Pose2D(double x, double y, double theta) : x{x}, y{y}, theta{theta} 
             {
                 //Keep theta between -pi and pi
                 theta = atan2(sin(theta), cos(theta));
             }
+            explicit Pose2D(ros_msgs::Pose2DSim const& pose) : x{pose.y}, y{pose.y}, theta{pose.theta} {}
+            explicit Pose2D(ros_msgs_lw::Pose2D const& pose);
 
             Pose2D() : x{0}, y{0}, theta{0} {}
 
@@ -149,13 +158,14 @@ namespace ros_msgs
             double theta;
 
         private:
-            size_t const _msg_size = 24;
+            static size_t const _msg_size;
     };
 
     struct Twist2D : RosMsg
     {
         public:
             explicit Twist2D(double x, double w) : v{x}, w{w} {}
+            explicit Twist2D(ros_msgs_lw::Twist2D const& velocity);
             Twist2D() : v{0}, w{0} {}
 
             size_t getSize() const override 
@@ -184,7 +194,7 @@ namespace ros_msgs
                 w = velocity.w;
             }
 
-            void operator=(int i)
+            void operator=(double i)
             {  
                 v = i;
                 w = i;
@@ -194,13 +204,14 @@ namespace ros_msgs
             double w;
 
         private:
-            size_t const _msg_size = 16;
+            static size_t const _msg_size;
     };
 
     struct Point2D : RosMsg
     {   
         public:
-            Point2D(double x, double y) : x{x}, y{y} {}
+            explicit Point2D(double x, double y) : x{x}, y{y} {}
+            explicit Point2D(ros_msgs_lw::Point2D const& point);
             Point2D() : x{0}, y{0} {}
 
             size_t getSize() const override 
@@ -227,7 +238,7 @@ namespace ros_msgs
             double y;
 
         private:
-            size_t const _msg_size = 16;
+            static size_t const _msg_size;
     };
 
     struct TrajectoryStateVector : RosMsg
@@ -273,7 +284,7 @@ namespace ros_msgs
             float ddy;
 
         private:
-            size_t const _msg_size = 24;
+            static size_t const _msg_size;
     };
 
     struct Trajectory : RosMsg
@@ -326,6 +337,4 @@ namespace ros_msgs
             uint32_t _trajectory_points;
             TrajectoryStateVector* _trajectory = nullptr;
     };
-
-    Pose2D operator+(ros_msgs::Pose2D pose, std::array<float, 3> vector);
 }

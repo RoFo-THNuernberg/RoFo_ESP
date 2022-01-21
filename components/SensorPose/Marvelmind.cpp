@@ -46,18 +46,27 @@ const uart_config_t Marvelmind::_uart_conf =
     .source_clk = UART_SCLK_APB     
 };
 
-Marvelmind::Marvelmind() : _measurement_noise_cov{400, 0, 0, 0, 400, 0, 0, 0, 400}
+Marvelmind::Marvelmind() : _measurement_noise_cov(0.01 * dspm::Mat::eye(3))
 {   
+
     ESP_ERROR_CHECK(uart_driver_install(_uart_port, UART_RX_BUFFER, 0, 0, NULL, 0));
 
     ESP_ERROR_CHECK(uart_param_config(_uart_port, &_uart_conf));
 
     ESP_ERROR_CHECK(uart_set_pin(_uart_port, UART_TX_PIN, UART_RX_PIN, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
 
+    _current_pose_queue = xQueueCreate(1, sizeof(ros_msgs_lw::Pose2D));
+
     xTaskCreate(_uart_read_data_task, "_uart_read_data_task", 2048, this, 5, NULL);
 }
 
-SensorPose& Marvelmind::init()
+Marvelmind::~Marvelmind()
+{
+    vTaskDelete(_uart_read_data_task_handle);
+    vQueueDelete(_current_pose_queue);
+}
+
+Marvelmind& Marvelmind::init()
 {
     if(_marvelmind_sensor == nullptr)
         _marvelmind_sensor = new Marvelmind;
@@ -65,27 +74,43 @@ SensorPose& Marvelmind::init()
     return *_marvelmind_sensor;
 }
 
-ros_msgs::Pose2D Marvelmind::getPose() {
-    _new_data_ready = false;
-
-    return _current_pose;
-}
-
-bool Marvelmind::newData()
+bool Marvelmind::calculateKalman(ros_msgs_lw::Pose2D const& a_priori_estimate, dspm::Mat const& a_priori_cov, ros_msgs_lw::Pose2D& a_posterior_estimate, dspm::Mat& a_posterior_cov) const
 {
-    return _new_data_ready;
+    ros_msgs_lw::Pose2D current_pose;
+
+    if(xQueueReceive(_current_pose_queue, &current_pose, 0) == pdPASS)
+    {
+        float kalman_data[9];
+        dspm::Mat kalman_gain(kalman_data, 3, 3);
+
+        kalman_gain = a_priori_cov * (a_priori_cov + _measurement_noise_cov).inverse();
+        
+        a_posterior_estimate = a_priori_estimate + kalman_gain * (current_pose - a_priori_estimate);
+
+        float identity_data[] = {1, 0, 0, 0, 1, 0, 0, 0, 1};
+        dspm::Mat identity(identity_data, 3, 3);
+
+        a_posterior_cov = (identity - kalman_gain) * a_priori_cov;
+
+        return true;
+    }
+
+    return false;
 }
-/*
-void Marvelmind::calculateKalmanGain(std::array<std::array<float, 3>, 3> const& a_priori_cov)
+
+bool Marvelmind::getInitialPose(ros_msgs_lw::Pose2D& initial_pose) const
 {
-    //float inverse_det = a_priori_cov[0][0]*a_priori_cov[1][1]*a_priori_cov[2][2];
+    if(xQueueReceive(_current_pose_queue, &initial_pose, 0) == pdPASS)
+        return true;
 
-    std::array<std::array<float, 3>, 3> inverse;
-
-
-    _kalman_gain = a_priori_cov;
+    return false;
 }
-*/
+
+void Marvelmind::getMeasurementNoiseCov(dspm::Mat& measurement_cov) const
+{
+    measurement_cov = _measurement_noise_cov;
+}
+
 void Marvelmind::_uart_read_data_task(void* pvParameters)
 {
     Marvelmind* marvelmind = (Marvelmind*)pvParameters;
@@ -106,7 +131,7 @@ void Marvelmind::_uart_read_data_task(void* pvParameters)
 
         uint8_t data_buffer[msg_header.packet_size];
 
-        len = uart_read_bytes(_uart_port, &data_buffer, msg_header.packet_size, portMAX_DELAY);
+        len = uart_read_bytes(_uart_port, &data_buffer, msg_header.packet_size + 2, portMAX_DELAY);
 
         if(len == -1)
         {
@@ -120,11 +145,16 @@ void Marvelmind::_uart_read_data_task(void* pvParameters)
             {
                 Marvelmind_Rx_Data* msg_data = (Marvelmind_Rx_Data*) data_buffer;
 
-                marvelmind->_current_pose.x = static_cast<float>(msg_data->x_coordinate_mm) / 10;
-                marvelmind->_current_pose.y = static_cast<float>(msg_data->y_coordinate_mm) / 10;
-                marvelmind->_current_pose.theta = static_cast<float>(msg_data->hedgehog_orientation_raw & 0xFFF) / 10;
+                ros_msgs_lw::Pose2D current_pose;
 
-                marvelmind->_new_data_ready = true;
+                current_pose.x = static_cast<float>(msg_data->x_coordinate_mm) / 1000;
+                current_pose.y = static_cast<float>(msg_data->y_coordinate_mm) / 1000;
+                current_pose.theta = static_cast<float>(msg_data->hedgehog_orientation_raw & 0xFFF) / 10. * 2 * M_PI / 360. + M_PI / 2.;
+
+                current_pose.theta = atan2(sin(current_pose.theta), cos(current_pose.theta));
+
+                xQueueOverwrite(marvelmind->SensorPose::_current_pose_queue, &current_pose);
+                xQueueOverwrite(marvelmind->_current_pose_queue, &current_pose);
 
                 break;
             }

@@ -1,3 +1,3 @@
-idf_component_register(SRCS "RosMsgs.cpp"
+idf_component_register(SRCS "RosMsgs.cpp" "RosMsgsLw.cpp"
                     INCLUDE_DIRS "include"
-                    REQUIRES RosBridgeClient)
+                    REQUIRES RosBridgeClient esp-dsp)

@@ -14,6 +14,7 @@
 #include <string>
 #include <vector>
 #include <functional>
+#include <memory>
 
 namespace ros
 {  
@@ -21,13 +22,13 @@ namespace ros
     class NodeHandle 
     {
         public:
-           static NodeHandle& init(std::string ros_namespace);
+           static NodeHandle& init(std::string ros_namespace, Socket& sock);
 
             template <typename T> Publisher<T> advertise(std::string const& topic);
-            template <typename T> void subscribe(std::string topic, std::function<void(ros_msgs::RosMsg const&)> callback_function);
+            template <typename T> void subscribe(std::string const& topic, std::function<void(std::shared_ptr<T> ros_msg)> callback_function);
 
         private:
-        	NodeHandle(std::string ros_namespace);
+        	NodeHandle(std::string ros_namespace, Socket& sock);
             NodeHandle(const NodeHandle&) = delete;
             ~NodeHandle();
 
@@ -62,15 +63,14 @@ namespace ros
 
     template <typename T> Publisher<T> NodeHandle::advertise(std::string const& topic)
     {
-        Publisher<T> new_pub(topic);
+        Publisher<T> new_pub(topic, _sock);
 
         return new_pub;
     }
 
-    template <typename T> void NodeHandle::subscribe(std::string topic, std::function<void(ros_msgs::RosMsg const&)>callback_function)
+    template <typename T> void NodeHandle::subscribe(std::string const& topic, std::function<void(std::shared_ptr<T> ros_msg)>callback_function)
     {   
-        ros_msgs::RosMsg* msg_type = (ros_msgs::RosMsg*)new T;
-        Subscriber* new_sub = new Subscriber(topic, *msg_type, callback_function);
+        Subscriber* new_sub = new SubscriberImpl<T>(topic, _sock, callback_function);
 
         _subscriber.push_back(new_sub);
     }

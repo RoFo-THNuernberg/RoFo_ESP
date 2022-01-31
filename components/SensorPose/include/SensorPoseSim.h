@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <memory>
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
@@ -22,7 +23,7 @@ class SensorPoseSim : public SensorPose
         SensorPoseSim(SensorPoseSim const&) = delete;
         ~SensorPoseSim() {}
 
-        void _setPose(ros_msgs::RosMsg const& pose_msg);
+        void _setPose(std::shared_ptr<ros_msgs::Pose2DSim> pose);
 
         static SensorPoseSim* _sensor_pose_sim;
 

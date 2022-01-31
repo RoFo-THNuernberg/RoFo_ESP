@@ -28,7 +28,8 @@ class KalmanFilter : public SensorPose
         KalmanFilter(std::initializer_list<KalmanSensor const*> const& sensor_list, OutputVelocity const& output_velocity);
         KalmanFilter(KalmanFilter const&) = delete;
         ~KalmanFilter();
-
+        
+        
         static void _kalman_filter_loop_timer(TimerHandle_t timer);
         static void _kalman_filter_loop_task(void* pvParameters);
 

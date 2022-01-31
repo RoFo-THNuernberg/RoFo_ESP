@@ -6,17 +6,11 @@ menu "Socket Configuration"
         help
             The client will connect to this IPV4 address.
 
-    config SOCKET_PORT
+    config ROS_SOCKET_PORT
         int "Socket Port"
         range 0 65535
-        default 3333
+        default 2888
         help
             Port for tcp/udp socket communication
 
-
-    config TX_QUEUE_SIZE
-        int "tx queue size"
-        default 32
-        help
-            set the max amount of messages to be stored in the tx_queue
 endmenu

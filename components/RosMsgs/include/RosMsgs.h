@@ -29,6 +29,7 @@ namespace ros_msgs
     struct String : RosMsg
     {   
         public:
+            explicit String() {}
             explicit String(std::string data) : data{data} {}
 
             size_t getSize() const override 
@@ -36,17 +37,32 @@ namespace ros_msgs
                 if(data.empty() == true)
                     return 0; 
                 
-                return data.size();
+                return sizeof(int32_t) + data.size() + 1;
             }
             
             void serialize(uint8_t* buffer) const override 
             { 
-                memcpy(buffer, data.c_str(), data.size());
+                if(data.empty() == false)
+                {
+                    ((int32_t*)buffer)[0] = data.size() + 1;
+                    memcpy(buffer + sizeof(int32_t), data.c_str(), data.size());
+                    buffer[sizeof(int32_t) + data.size()] = '\0';
+                }
             }
             
             void deserialize(uint8_t* buffer)
             {
                 data.assign((char*)buffer);
+            }
+
+            bool operator==(std::string string_2) const
+            {
+                return data == string_2;
+            }
+
+            explicit operator std::string() const
+            {
+                return data;
             }
 
             std::string data;

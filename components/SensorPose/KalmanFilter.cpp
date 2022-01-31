@@ -57,7 +57,7 @@ void KalmanFilter::_kalman_filter_loop_task(void* pvParameters)
         if(xSemaphoreTake(kalman_filter._reinitialize_sensor_semphr, 0) == pdPASS)
         {
             while(kalman_filter._sensor_list[0]->getInitialPose(kalman_filter._a_posterior_estimate) == false)
-                vTaskDelay(100 / portMAX_DELAY);
+                vTaskDelay(500 / portTICK_PERIOD_MS);
 
             kalman_filter._sensor_list[0]->getMeasurementNoiseCov(kalman_filter._a_posterior_cov);
         }

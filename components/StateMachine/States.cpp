@@ -8,33 +8,34 @@ std::string const DriveWithVelocity::_state = "DriveWithVelocity";
 std::string const DriveToPoint::_state = "DriveToPoint";
 
 
-void Idle::set_velocity(StateMachine& state_machine, ros_msgs_lw::Twist2D const& vel_vector)
+void Idle::set_velocity(StateMachine& state_machine, std::shared_ptr<ros_msgs::Twist2D> vel_vector_msg)
 {
+    ros_msgs_lw::Twist2D vel_vector(*vel_vector_msg);
+    
     state_machine.output_velocity.setVelocity(vel_vector);
 
-    if ((vel_vector.v * vel_vector.v + vel_vector.w * vel_vector.w) > MIN_VEL_THRESHOLD)
-    {
+    if (vel_vector.v != 0 || vel_vector.w != 0)
         state_machine.setState(new DriveWithVelocity);
-    }
+    
 }
 
-void Idle::set_goal_point(StateMachine& state_machine, ros_msgs_lw::Point2D const& goal_point)
+void Idle::set_goal_point(StateMachine& state_machine, std::shared_ptr<ros_msgs::Point2D> goal_point)
 {
-    state_machine.controller_master.start_controller(new p2pController(0.2, 0.8, goal_point), std::bind(&StateMachine::stop,& state_machine));
+    state_machine.controller_master.start_controller(new p2pController(0.2, 0.8, ros_msgs_lw::Point2D(*goal_point)), std::bind(&StateMachine::stop,& state_machine));
 
     state_machine.setState(new DriveToPoint);
 }
 
-void DriveWithVelocity::set_velocity(StateMachine& state_machine, ros_msgs_lw::Twist2D const& vel_vector)
+void DriveWithVelocity::set_velocity(StateMachine& state_machine, std::shared_ptr<ros_msgs::Twist2D> vel_vector_msg)
 {
-    if ((vel_vector.v * vel_vector.v + vel_vector.w * vel_vector.w) < MIN_VEL_THRESHOLD)
-    {
-        state_machine.output_velocity.setVelocity(ros_msgs_lw::Twist2D(ros_msgs_lw::Twist2D(0, 0)));
-
+    
+    ros_msgs_lw::Twist2D vel_vector(*vel_vector_msg);
+    
+    if (vel_vector.v == 0 && vel_vector.w == 0)
         state_machine.setState(new Idle);
-    } 
-    else
-        state_machine.output_velocity.setVelocity(ros_msgs_lw::Twist2D(vel_vector));
+
+    state_machine.output_velocity.setVelocity(vel_vector);
+    
 }
 
 void DriveWithVelocity::stop(StateMachine& state_machine)
@@ -42,12 +43,14 @@ void DriveWithVelocity::stop(StateMachine& state_machine)
     state_machine.setState(new Idle);
 
     ros_msgs_lw::Twist2D vel_vector(0, 0);
-    state_machine.output_velocity.setVelocity(ros_msgs_lw::Twist2D(vel_vector));
+    state_machine.output_velocity.setVelocity(vel_vector);
 }
 
-void DriveToPoint::set_velocity(StateMachine& state_machine, ros_msgs_lw::Twist2D const& vel_vector)
+void DriveToPoint::set_velocity(StateMachine& state_machine, std::shared_ptr<ros_msgs::Twist2D> vel_vector_msg)
 {
-    if ((vel_vector.v * vel_vector.v + vel_vector.w * vel_vector.w) < MIN_VEL_THRESHOLD)
+    ros_msgs_lw::Twist2D vel_vector(*vel_vector_msg);
+
+    if (vel_vector.v == 0 && vel_vector.w == 0)
     {
         state_machine.controller_master.stop_controller();
 
@@ -55,9 +58,9 @@ void DriveToPoint::set_velocity(StateMachine& state_machine, ros_msgs_lw::Twist2
     } 
 }
 
-void DriveToPoint::set_goal_point(StateMachine& state_machine, ros_msgs_lw::Point2D const& goal_point)
+void DriveToPoint::set_goal_point(StateMachine& state_machine, std::shared_ptr<ros_msgs::Point2D> goal_point)
 {
-    state_machine.controller_master.start_controller(new p2pController(0.1, 0.1, goal_point), std::bind(&StateMachine::stop,& state_machine));
+    state_machine.controller_master.start_controller(new p2pController(0.1, 0.1, ros_msgs_lw::Point2D(*goal_point)), std::bind(&StateMachine::stop,& state_machine));
 
     state_machine.setState(new DriveToPoint);
 }

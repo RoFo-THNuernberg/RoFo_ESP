@@ -1,0 +1,19 @@
+menu "Data Logger"
+
+    config DATA_LOG_SAMPLE_SIZE
+        int "log sample size"
+        default 64
+        help
+            Maximum log sample size per call to macro LOG_DATA().
+            Big values will lead to wasted heap memory.
+            Adjust value according to your maximum log sample.
+
+    config DATA_LOG_BUFFER_SIZE
+        int "log buffer size"
+        default 2048
+        help
+            Size of each heap buffer, which stores the data logs.
+            Small values will lead to many heap allocations.
+            
+
+endmenu

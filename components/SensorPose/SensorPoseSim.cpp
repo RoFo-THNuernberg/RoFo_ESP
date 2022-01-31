@@ -15,9 +15,9 @@ SensorPose& SensorPoseSim::init(ros::NodeHandle& node_handle)
     return *_sensor_pose_sim;
 }
 
-void SensorPoseSim::_setPose(ros_msgs::RosMsg const& pose_msg)
+void SensorPoseSim::_setPose(std::shared_ptr<ros_msgs::Pose2DSim> pose)
 {   
-    ros_msgs_lw::Pose2D current_pose((ros_msgs::Pose2DSim&)pose_msg);
+    ros_msgs_lw::Pose2D current_pose(*pose);
 
     xQueueOverwrite(_current_pose_queue, &current_pose);
 }

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include "RosMsgs.h"
 #include "RosMsgsLw.h"
 #include "OutputVelocity.h"
@@ -14,8 +16,8 @@ class StateMachine
 
         void setState(State*);
 
-        void set_velocity(ros_msgs::RosMsg const&);
-        void set_goal_point(ros_msgs::RosMsg const&);
+        void set_velocity(std::shared_ptr<ros_msgs::Twist2D> vel_vector);
+        void set_goal_point(std::shared_ptr<ros_msgs::Point2D> goal_point);
         void stop();
 
         ControllerMaster& controller_master;

@@ -13,7 +13,7 @@ namespace ros
     template <typename T> class Publisher
     {
         public:
-            Publisher(const std::string topic) : _topic{topic}, _sock{Socket::init()}{}
+            Publisher(const std::string topic, Socket& sock) : _topic{topic}, _sock{sock}{}
             void publish(const T& msg);
 
         private:
@@ -23,7 +23,8 @@ namespace ros
     
     template <typename T> void Publisher<T>::publish(const T& msg)
     {   
-        uint8_t pkt_buffer[_topic.size() + msg.getSize() +  2];
+        uint8_t* pkt_buffer = new uint8_t[_topic.size() + msg.getSize() +  2];
+
         int pkt_len = 0;
         
         pkt_buffer[0] = PUBLISH_ID;
@@ -39,5 +40,7 @@ namespace ros
         pkt_len += msg.getSize();
 
         _sock.socket_send(pkt_buffer, pkt_len);
+
+        delete[] pkt_buffer;
     }
 }

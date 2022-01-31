@@ -10,7 +10,7 @@ namespace ros
     TaskHandle_t NodeHandle::_check_keep_alive_thread{};
     TaskHandle_t NodeHandle::_communication_handler_thread{};
 
-    NodeHandle::NodeHandle(std::string ros_namespace) : _sock{Socket::init()}, _ros_namespace{ros_namespace}
+    NodeHandle::NodeHandle(std::string ros_namespace, Socket& sock) : _sock{sock}, _ros_namespace{ros_namespace}
     {   
         _keep_alive_time_us = esp_timer_get_time();
         _last_send_keep_alive_us = esp_timer_get_time();
@@ -19,7 +19,7 @@ namespace ros
         
         _send_init();
 
-        xTaskCreate(_communication_handler, "_communication_handler", 4048, this, 5, &_communication_handler_thread);
+        xTaskCreate(_communication_handler, "_communication_handler", 8192, this, 5, &_communication_handler_thread);
         xTaskCreate(_check_keep_alive, "_check_keep_alive", 2048, this, 5, &_check_keep_alive_thread);
     }
 
@@ -31,10 +31,10 @@ namespace ros
         _unsubscribe();
     }
 
-    NodeHandle& NodeHandle::init(std::string ros_namespace)
+    NodeHandle& NodeHandle::init(std::string ros_namespace, Socket& sock)
     {
         if(_node_handle_obj == nullptr)
-            _node_handle_obj = new NodeHandle(ros_namespace);
+            _node_handle_obj = new NodeHandle(ros_namespace, sock);
 
         return *_node_handle_obj;
     }
@@ -46,7 +46,10 @@ namespace ros
             ESP_LOGI(TAG, "Restarting Protocol!");
             _protocol_restarting = true;
 
-            _sock.restart_socket();
+            _sock.disconnect_socket();
+            vTaskDelay(3000 / portTICK_PERIOD_MS);
+            _sock.connect_socket();
+
             _send_init();
             _keep_alive_time_us = esp_timer_get_time();
 
@@ -180,38 +183,19 @@ namespace ros
                 case PUBLISH_ID:
                 {   
                     std::string topic;
-                    status_error = _sock.socket_receive_string(topic, 32);
+                    status_error = _sock.socket_receive_string(topic, MAX_TOPIC_LENGTH);
 
                     if(status_error == SOCKET_FAIL)
                         break;
 
-                    //ESP_LOGI(TAG, "Received topic: %s", topic.c_str());
+                    ESP_LOGI(TAG, "Received topic: %s", topic.c_str());
                     
                     Subscriber* sub = _getSubscriber(topic);
 
                     if(sub != nullptr)
-                    {   
-                        int msg_len = sub->getMsg().getSize();
-
-                        if(msg_len == -1)
-                        {
-                            status_error = _sock.socket_receive((uint8_t*)&msg_len, sizeof(msg_len));
-
-                            if(status_error == SOCKET_FAIL)
-                                break;
-                        }
-
-                        uint8_t* rx_buffer = new uint8_t[msg_len];
-                        status_error = _sock.socket_receive(rx_buffer, msg_len);
-
-                        if(status_error == SOCKET_FAIL)
-                            break;
-
-                        sub->getMsg().deserialize(rx_buffer);
-
-                        delete[] rx_buffer;
-
-                        sub->callback_function(sub->getMsg());
+                    {
+                        if(sub->recvMessage() == false)
+                            status_error = SOCKET_FAIL;
                     }
                     else
                         status_error = SOCKET_FAIL;
@@ -236,10 +220,8 @@ namespace ros
     {
         for(auto i : _subscriber)
         {
-            if(i->topic == topic)
-            {
+            if(i->compareTopic(topic))
                 return i;
-            }
         }
 
         return nullptr;

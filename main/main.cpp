@@ -18,6 +18,7 @@
 #include "KalmanFilter.h"
 #include "MotorController.h"
 #include "ControllerMaster.h"
+#include "LedStrip.h"
 
 #define TAG "Main"
 

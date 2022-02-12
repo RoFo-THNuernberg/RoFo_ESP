@@ -24,7 +24,7 @@ namespace ros
         public:
            static NodeHandle& init(std::string ros_namespace, Socket& sock);
 
-            template <typename T> Publisher<T> advertise(std::string const& topic);
+            template <typename T> Publisher<T>& advertise(std::string const& topic);
             template <typename T> void subscribe(std::string const& topic, std::function<void(std::shared_ptr<T> ros_msg)> callback_function);
 
         private:
@@ -48,6 +48,7 @@ namespace ros
             Socket& _sock;
             std::string _ros_namespace;
             std::vector<Subscriber*> _subscriber;
+            std::vector<PublisherInterface*> _publisher;
 
             static TaskHandle_t _communication_handler_thread;
             static TaskHandle_t _check_keep_alive_thread;
@@ -61,18 +62,24 @@ namespace ros
             uint64_t _last_send_keep_alive_us;
     };
 
-    template <typename T> Publisher<T> NodeHandle::advertise(std::string const& topic)
+    template <typename T> Publisher<T>& NodeHandle::advertise(std::string const& topic)
     {
-        Publisher<T> new_pub(topic, _sock);
+        Publisher<T>* publisher = new Publisher<T>(topic, _sock);
 
-        return new_pub;
+        publisher->advertise();
+
+        _publisher.push_back(publisher);
+
+        return *publisher;
     }
 
     template <typename T> void NodeHandle::subscribe(std::string const& topic, std::function<void(std::shared_ptr<T> ros_msg)>callback_function)
     {   
-        Subscriber* new_sub = new SubscriberImpl<T>(topic, _sock, callback_function);
+        Subscriber* subscriber = new SubscriberImpl<T>(topic, _sock, callback_function);
 
-        _subscriber.push_back(new_sub);
+        subscriber->subscribe();
+
+        _subscriber.push_back(subscriber);
     }
 
 }

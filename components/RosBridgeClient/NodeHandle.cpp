@@ -42,9 +42,12 @@ namespace ros
     void NodeHandle::_restart_protocol()
     {   
         if(xSemaphoreTake(_restart_mutx, 0) == pdPASS)
-        {   
+        {    
             ESP_LOGI(TAG, "Restarting Protocol!");
             _protocol_restarting = true;
+
+            for(ros::PublisherInterface* i : _publisher)
+                i->block_publishing();
 
             _sock.disconnect_socket();
             vTaskDelay(3000 / portTICK_PERIOD_MS);
@@ -53,6 +56,14 @@ namespace ros
             _send_init();
             _keep_alive_time_us = esp_timer_get_time();
 
+            for(ros::Subscriber* i : _subscriber)
+                i->subscribe();
+
+            for(ros::PublisherInterface* i : _publisher)
+            {
+                i->advertise();
+                i->unblock_publishing();
+            }
             _protocol_restarting = false;
 
             xSemaphoreGive(_restart_mutx);
@@ -188,7 +199,7 @@ namespace ros
                     if(status_error == SOCKET_FAIL)
                         break;
 
-                    ESP_LOGI(TAG, "Received topic: %s", topic.c_str());
+                    //ESP_LOGI(TAG, "Received topic: %s", topic.c_str());
                     
                     Subscriber* sub = _getSubscriber(topic);
 

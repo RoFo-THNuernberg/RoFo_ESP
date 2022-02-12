@@ -16,6 +16,7 @@
 #include "KalmanFilter.h"
 #include "MotorController.h"
 #include "ControllerMaster.h"
+#include "LedStrip.h"
 
 #define TAG "Main"
 
@@ -84,6 +85,9 @@ extern "C" void app_main(void)
   StateMachine& state_machine = StateMachine::init(controller_master, output_velocity);
   node_handle.subscribe<ros_msgs::Point2D>("goal_point", std::bind(&StateMachine::set_goal_point, &state_machine, std::placeholders::_1));
   node_handle.subscribe<ros_msgs::Twist2D>("vel", std::bind(&StateMachine::set_velocity, &state_machine, std::placeholders::_1));
+
+  LedStrip& led_strip = LedStrip::init();
+  node_handle.subscribe<ros_msgs::String>("led", std::bind(&LedStrip::animation_callback, &led_strip, std::placeholders::_1));
 
   while(1) 
   { 

@@ -1,2 +1,3 @@
-idf_component_register(SRCS "led_strip_component.cpp"
-                    INCLUDE_DIRS "include")
+idf_component_register(SRCS "LedStrip.cpp"
+                    INCLUDE_DIRS "include"
+                    REQUIRES RosMsgs RosBridgeClient)

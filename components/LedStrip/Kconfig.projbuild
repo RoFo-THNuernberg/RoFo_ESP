@@ -1,7 +1,7 @@
 menu "LED Strip Configuration"
     config LED_RMT_TX_GPIO
         int "LED TX GPIO"
-        default 18
+        default 25
         help
             Set the GPIO number used for transmitting the RMT signal.
 

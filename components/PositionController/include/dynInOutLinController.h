@@ -8,6 +8,9 @@
 #include "esp_timer.h"
 
 
+/**
+ * @brief PositionController implementation -> check Projektarbeit Regelung und Simulation von Schwarmrobotern
+ */
 class dynInOutLinController : public PositionController
 {
     public:

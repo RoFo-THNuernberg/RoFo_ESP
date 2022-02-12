@@ -1,6 +1,5 @@
 #include "ControllerMaster.h"
 
-
 #define TAG "ControllerMaster"
 
 
@@ -13,7 +12,7 @@ ControllerMaster::ControllerMaster(OutputVelocity& output_velocity, SensorPose& 
     xTaskCreate(_control_loop_task, "control_loop_task", 2048, this, 8, &_control_loop_task_handle);
     _control_loop_timer_handle = xTimerCreate("control_loop", pdMS_TO_TICKS(10), pdTRUE, NULL, _control_loop_timer);
 
-    _timer_is_stopped = true;
+    _controller_is_stopped = true;
     xTimerStop(_control_loop_timer_handle, portMAX_DELAY);
 }
 
@@ -49,7 +48,7 @@ void ControllerMaster::start_controller(PositionController* pos_controller, std:
 
         _sensor_pose.reInit();
 
-        _timer_is_stopped = false;
+        _controller_is_stopped = false;
         xTimerStart(_control_loop_timer_handle, portMAX_DELAY);
 
         xSemaphoreGive(_pos_controller_mutx);
@@ -63,7 +62,7 @@ void ControllerMaster::_control_loop_timer(TimerHandle_t timer)
 
 void ControllerMaster::stop_controller()
 {
-    _timer_is_stopped = true;
+    _controller_is_stopped = true;
 
     _output_velocity.setVelocity(ros_msgs_lw::Twist2D(0, 0));
 }
@@ -76,7 +75,7 @@ void ControllerMaster::_control_loop_task(void* pvParameters)
     {
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 
-        if(controller_obj._timer_is_stopped == true)
+        if(controller_obj._controller_is_stopped == true)
             while(xTimerStop(controller_obj._control_loop_timer_handle, portMAX_DELAY) == pdFALSE) {}
             
         else if(xSemaphoreTake(controller_obj._pos_controller_mutx, 0) == pdPASS)

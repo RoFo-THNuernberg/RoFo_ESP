@@ -64,11 +64,14 @@ namespace ros_msgs_lw
 
     };
 
+    Pose2D operator*(float scalar, Pose2D const& pose);
+
     Pose2D operator+(Pose2D const& pose_1, Pose2D const& pose_2);
 
     Pose2D operator-(Pose2D const& pose_1, Pose2D const& pose_2);
 
+    Pose2D operator+(Pose2D const& pose, dspm::Mat const& mat);
+
     dspm::Mat operator*(dspm::Mat const& mat, Pose2D const& pose);
 
-    Pose2D operator+(Pose2D const& pose, dspm::Mat const& mat);
 }

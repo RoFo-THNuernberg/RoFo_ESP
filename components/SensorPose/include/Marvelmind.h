@@ -23,8 +23,9 @@ class Marvelmind : public KalmanSensor, public SensorPose
 
         void reInit() override {}
 
+        void calculateMeasurementNoiseCov() const override;
         bool calculateKalman(ros_msgs_lw::Pose2D const& a_priori_estimate, dspm::Mat const& a_priori_cov, ros_msgs_lw::Pose2D& a_posterior_estimate, dspm::Mat& a_posterior_cov) const override;
-        bool getInitialPose(ros_msgs_lw::Pose2D& initial_pose) const override;
+        bool getAbsolutePose(ros_msgs_lw::Pose2D& initial_pose) const override;
         void getMeasurementNoiseCov(dspm::Mat& measurement_cov) const override;
 
     private:
@@ -38,7 +39,7 @@ class Marvelmind : public KalmanSensor, public SensorPose
 
         QueueHandle_t _current_pose_queue;
 
-        dspm::Mat const _measurement_noise_cov;
+        dspm::Mat _measurement_noise_cov;
 
         static const uart_port_t _uart_port; 
         static const uart_config_t _uart_conf;

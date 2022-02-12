@@ -2,6 +2,9 @@
 
 #include "RosMsgsLw.h"
 
+/**
+ * @brief Interface class enables switching between real world motor control and simulator mode 
+ */ 
 class OutputVelocity
 {
     public:

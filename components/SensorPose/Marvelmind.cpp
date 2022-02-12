@@ -48,6 +48,15 @@ const uart_config_t Marvelmind::_uart_conf =
 
 Marvelmind::Marvelmind() : _measurement_noise_cov(0.01 * dspm::Mat::eye(3))
 {   
+    _measurement_noise_cov(0, 0) = 0.000002; 
+    _measurement_noise_cov(0, 1) = -0.000001;
+    _measurement_noise_cov(0, 2) = 0.000013;
+    _measurement_noise_cov(1, 0) = -0.000001;
+    _measurement_noise_cov(1, 1) = 0.000007; 
+    _measurement_noise_cov(1, 2) = -0.000021;
+    _measurement_noise_cov(2, 0) = 0.000013;
+    _measurement_noise_cov(2, 1) = -0.000021;
+    _measurement_noise_cov(2, 2) = 0.000190;
 
     ESP_ERROR_CHECK(uart_driver_install(_uart_port, UART_RX_BUFFER, 0, 0, NULL, 0));
 
@@ -74,6 +83,53 @@ Marvelmind& Marvelmind::init()
     return *_marvelmind_sensor;
 }
 
+void Marvelmind::calculateMeasurementNoiseCov() const
+{
+    ros_msgs_lw::Pose2D* pose_measurements = new ros_msgs_lw::Pose2D[KALMAN_SENSOR_COVARIANCE_CALCULATION_SAMPLES];
+
+    ros_msgs_lw::Pose2D mean;
+    
+    for(int i = 0; i < KALMAN_SENSOR_COVARIANCE_CALCULATION_SAMPLES; i++)
+    {
+        xQueueReceive(_current_pose_queue, &pose_measurements[i], portMAX_DELAY);
+
+        mean = mean + 1. / KALMAN_SENSOR_COVARIANCE_CALCULATION_SAMPLES * pose_measurements[i];
+    }
+    
+    dspm::Mat measurement_noise_cov(3, 3);
+
+    for(int i = 0; i < KALMAN_SENSOR_COVARIANCE_CALCULATION_SAMPLES; i++)
+    {
+        dspm::Mat deviation(3, 1);
+        deviation(0, 0) = pose_measurements[i].x - mean.x;
+        deviation(1, 0) = pose_measurements[i].y - mean.y;
+        deviation(2, 0) = pose_measurements[i].theta - mean.theta;
+
+        deviation(2, 0) = atan2(sin(deviation(2, 0)), cos(deviation(2, 0)));
+
+        measurement_noise_cov += deviation * deviation.t(); 
+    }
+
+
+    printf("Measurement Noise Cov: \n\n");
+
+    for(int i = 0; i < 3; i++)
+    {
+        printf("|");
+
+        for(int k = 0; k < 3; k++)
+            printf("  %f", measurement_noise_cov(i, k));
+
+        printf("  |\n");        
+    }
+
+    delete[] pose_measurements;
+
+    vTaskDelay(10000 / portTICK_PERIOD_MS);
+
+    esp_restart();
+}
+
 bool Marvelmind::calculateKalman(ros_msgs_lw::Pose2D const& a_priori_estimate, dspm::Mat const& a_priori_cov, ros_msgs_lw::Pose2D& a_posterior_estimate, dspm::Mat& a_posterior_cov) const
 {
     ros_msgs_lw::Pose2D current_pose;
@@ -98,7 +154,7 @@ bool Marvelmind::calculateKalman(ros_msgs_lw::Pose2D const& a_priori_estimate, d
     return false;
 }
 
-bool Marvelmind::getInitialPose(ros_msgs_lw::Pose2D& initial_pose) const
+bool Marvelmind::getAbsolutePose(ros_msgs_lw::Pose2D& initial_pose) const
 {
     if(xQueueReceive(_current_pose_queue, &initial_pose, 0) == pdPASS)
         return true;

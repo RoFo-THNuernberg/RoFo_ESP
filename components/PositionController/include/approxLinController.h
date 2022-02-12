@@ -6,7 +6,9 @@
 
 #include "math.h"
 
-
+/**
+ * @brief PositionController implementation -> check Projektarbeit Regelung und Simulation von Schwarmrobotern
+ */
 class approxLinController : public PositionController
 {
     public:

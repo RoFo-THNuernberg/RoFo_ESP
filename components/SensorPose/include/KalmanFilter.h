@@ -43,7 +43,7 @@ class KalmanFilter : public SensorPose
         ros_msgs_lw::Pose2D _a_posterior_estimate;
         dspm::Mat _a_posterior_cov;
 
-        float _process_noise_variance = 0.001;
+        float _process_noise_variance = 0.0000001;
         dspm::Mat _process_noise_cov;
 
         uint64_t _timestamp_us;

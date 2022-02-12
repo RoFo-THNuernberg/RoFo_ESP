@@ -1,8 +1,6 @@
 #include "esp_err.h"
 #include "nvs_flash.h"
 
-#include "driver/gpio.h"
-
 #include "Wifi.h"
 #include "SensorPose.h"
 #include "Marvelmind.h"
@@ -26,7 +24,7 @@
 
 //#define USE_SIM
 #define KALMAN
-
+//#define STEP_RESPONSE
 
 #define ROS_SOCKET_PORT CONFIG_ROS_SOCKET_PORT
 #define SERVER_IP_ADDR CONFIG_SERVER_IP_ADDR
@@ -51,6 +49,10 @@ extern "C" void app_main(void)
 
   MotorController& motor_controller = MotorController::init();
 
+  #ifdef STEP_RESPONSE
+    motor_controller.disablePIcontrol();
+  #endif
+
   #ifdef USE_SIM
     ros::NodeHandle& node_handle = ros::NodeHandle::init("turtle1", ros_socket);
     SensorPose& pose_sensor = SensorPoseSim::init(node_handle);
@@ -74,7 +76,6 @@ extern "C" void app_main(void)
     node_handle.subscribe<ros_msgs::String>("start_log", std::bind(&DataLogger::startLogCallback, &data_logger, std::placeholders::_1));
   #endif
 
-
   ControllerMaster& controller_master = ControllerMaster::init(output_velocity, pose_sensor);
 
   auto pose_feedback = node_handle.advertise<ros_msgs::Pose2D>("pose2D");
@@ -94,8 +95,6 @@ extern "C" void app_main(void)
     ros_msgs::Pose2D pose_msg(pose);
 
     pose_feedback.publish(pose_msg);
-
-    LOG_DATA("dies ist ein test %d %d %lld\n", 0, 0, esp_timer_get_time());
 
     vTaskDelay(10 / portTICK_PERIOD_MS);
   }

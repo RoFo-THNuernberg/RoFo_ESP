@@ -2,6 +2,9 @@
 
 #include "RosMsgsLw.h"
 
+/**
+ * @brief Interface for PositionController classes 
+ */
 class PositionController
 {
     public:

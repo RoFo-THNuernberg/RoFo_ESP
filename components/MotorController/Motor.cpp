@@ -58,7 +58,7 @@ Motor& Motor::getMotorA()
             .mcpwm_cap2_in_num = -1,  
         };
 
-        _motor_a = new Motor(MCPWM_UNIT_0, motor_pins, true);
+        _motor_a = new Motor(MCPWM_UNIT_0, motor_pins, false);
     }
         
     return *_motor_a;
@@ -87,28 +87,26 @@ Motor& Motor::getMotorB()
             .mcpwm_cap2_in_num = -1,  
         };
         
-        _motor_b = new Motor(MCPWM_UNIT_1, motor_pins, false);
+        _motor_b = new Motor(MCPWM_UNIT_1, motor_pins, true);
     }
         
     return *_motor_b;
 }
 
-void Motor::setVelocity(float setpoint_velocity)
+void Motor::setSetpointVelocity(float setpoint_velocity)
 {
     _setpoint_velocity = setpoint_velocity;
 }
 
-void Motor::updatePIControl()
-{
-    //Input
-    float actual_velocity = getActualVelocity();
+float Motor::getSetpointVelocity() const
+{   
+    return _setpoint_velocity;
+}
 
+float Motor::updatePIControl(float actual_velocity)
+{
     //Calculate Error
-    float error = 0;
-    if(_motor_dir)
-        error = actual_velocity - _setpoint_velocity;
-    else
-        error = _setpoint_velocity - actual_velocity;
+    float error = _setpoint_velocity - actual_velocity;
 
     //Calculate Proportional Output
     float p_out = _kp * error;
@@ -130,12 +128,12 @@ void Motor::updatePIControl()
     //Calculate Ouput
     float output_duty_cycle = p_out + i_out;
 
-    //Output
-    _setDuty(output_duty_cycle);
+    return output_duty_cycle;
 }
 
 float Motor::getActualVelocity()
 {
+    //set _encoder_pulse_period to zero if the motor is supposed to stop and it is not turning/freewheeling anymore
     if(_current_duty_cycle == 0 && _prev_pulse_period == _encoder_pulse_period)
         _encoder_pulse_period = 0;
 
@@ -144,11 +142,13 @@ float Motor::getActualVelocity()
     return (_encoder_pulse_period != 0) ? ((float)rtc_clk_apb_freq_get() / _encoder_pulse_period) * TICK_PER_S_TO_ROTATION_PER_S : 0;
 }
 
-void Motor::_setDuty(float duty_cycle)
+void Motor::setDuty(float duty_cycle)
 {   
+    if(!_motor_dir)
+        duty_cycle *= -1;
+
     _current_duty_cycle = duty_cycle;
 
-    //mcpwm_set_duty_in_us() might not be safe to be called from an interrupt!?
     if(duty_cycle > 0)
     {
         mcpwm_set_duty(_mcpwm_unit, _mcpwm_timer, MCPWM_GEN_A, 0);
@@ -161,7 +161,6 @@ void Motor::_setDuty(float duty_cycle)
     }
     else
     {   
-        _current_duty_cycle = 0;
         mcpwm_set_duty(_mcpwm_unit, _mcpwm_timer, MCPWM_GEN_A, 0);
         mcpwm_set_duty(_mcpwm_unit, _mcpwm_timer, MCPWM_GEN_B, 0);
     }

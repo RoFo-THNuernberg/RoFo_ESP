@@ -8,6 +8,9 @@
 #include "esp_log.h"
 
 
+/**
+ * @brief PositionController implementation -> check Projektarbeit Regelung und Simulation von Schwarmrobotern
+ */
 class p2pController : public PositionController
 {
     public:

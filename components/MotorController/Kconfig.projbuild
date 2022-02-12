@@ -21,6 +21,10 @@ menu "Motor Configuration"
     config MOTOR_B_IN2
         int "Motor B IN2"
         default "18"
+
+    config ENABLE_PIN
+        int "Enable Pin"
+        default "23"
     
     config MOTOR_B_INCREMENTAL_ENCODER_1
         int "Motor B incremental encoder 1"

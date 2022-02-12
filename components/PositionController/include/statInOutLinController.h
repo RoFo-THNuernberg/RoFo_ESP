@@ -7,6 +7,9 @@
 #include "math.h"
 
 
+/**
+ * @brief PositionController implementation -> check Projektarbeit Regelung und Simulation von Schwarmrobotern
+ */
 class statInOutLinController : public PositionController
 {
     public:

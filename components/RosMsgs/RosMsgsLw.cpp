@@ -80,6 +80,18 @@ namespace ros_msgs_lw
         return result;
     }
 
+    Pose2D operator*(float scalar, Pose2D const& pose)
+    {
+        Pose2D result;
+
+        result.x = scalar * pose.x;
+        result.y = scalar * pose.y;
+        result.theta = scalar * pose.theta;
+
+        result.theta = atan2(sin(result.theta), cos(result.theta));
+
+        return result;
+    }
 
     dspm::Mat operator*(dspm::Mat const& mat, Pose2D const& pose)
     {

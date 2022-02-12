@@ -35,7 +35,7 @@ DataLogger& DataLogger::init(ros::Publisher<ros_msgs::String>& publisher)
 
 void DataLogger::startLogCallback(std::shared_ptr<ros_msgs::String> msg)
 {
-    _data_logging_time_ms  = std::stoi((std::string)*msg, nullptr) * 1000;
+    _data_logging_time_ms  = std::stof((std::string)*msg, nullptr) * 1000;
 
     if(_data_logging_time_ms > 0 && _data_logging_time_ms <= MAX_LOG_TIME_SECONDS * 1000)
     {

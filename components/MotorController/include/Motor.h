@@ -7,24 +7,64 @@
 #include "driver/mcpwm.h"
 #include "soc/rtc.h"
 
+/**
+ * @brief This class controls Motor_A and Motor_B. It provides a callback function for the MCPWM capture component, it calculates actual motor speed, it controls the motor duty cycle and it provides a PI controller. 
+ */
 class Motor
 {
     public:
         static Motor& getMotorA();
         static Motor& getMotorB();
 
-        void setVelocity(float setpoint_velocity);
+        /**
+         * @brief Set the target angular velocity for the motor in RAD/s
+         * 
+         * @param setpoint_velocity Target angular velocity
+         */
+        void setSetpointVelocity(float setpoint_velocity);
+        
+        /**
+         * @brief Get the target angular velocity of the motor in RAD/s
+         * 
+         * @return Target angular velocity 
+         */
+        float getSetpointVelocity() const;
+
+        /**
+         * @brief Get the actual velocity of the motor in RAD/s
+         * 
+         * @return Actual motor velocity 
+         */
         float getActualVelocity();
 
-        void updatePIControl();
+        /**
+         * @brief Calculate PI controller output for the next time step 
+         * 
+         * @note This function must be called periodically
+         * 
+         * @param actual_velocity current velocity of the motor
+         * 
+         * @return ouput duty cycle
+         */
+        float updatePIControl(float actual_velocity);
+
+        /**
+         * @brief Set output duty cycle for the motor
+         * 
+         * @param duty_cycle Output duty cycle (Accepted range: -100 - +100)  
+         */
+        void setDuty(float duty_cycle);
 
     private:
         Motor(mcpwm_unit_t mcpwm_unit, mcpwm_pin_config_t motor_pins, bool motor_dir);
         ~Motor() {}
         Motor(Motor const&) = delete;
-
-        void _setDuty(float duty_cycle);
-
+        
+        /**
+         * @brief Callback function for the Espressife IDF MCPWM Capture Module 
+         * 
+         * @note Calculates the time difference (_encoder_pulse_period) between two positive edges on CAP_0. The sign is obtained by checking if the last edge on CAP_1 was positive or negative.   
+         */
         static bool IRAM_ATTR _encoder_callback(mcpwm_unit_t mcpwm_unit, mcpwm_capture_channel_id_t cap_channel, const cap_event_data_t *edata, void *user_data);
 
         static Motor* _motor_a;
@@ -32,6 +72,7 @@ class Motor
 
         float _kp, _ki;
 
+        /** Invert mapping between motor direction and sign of duty cycle **/
         bool _motor_dir;
 
         float _setpoint_velocity = 0;

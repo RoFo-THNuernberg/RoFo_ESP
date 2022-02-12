@@ -19,7 +19,7 @@ class OutputVelocitySim : public OutputVelocity
          * 
          * @return Reference to the OutputVelocity instance
          */  
-        static OutputVelocity& init(ros::NodeHandle& node_handle);
+        static OutputVelocity& init(ros::Publisher<ros_msgs::Twist2D>& publisher);
         
         /**
          * @brief This function publishes the velocity vector to ROS. This can be useful for simulating the robot with e.g Turtlesim
@@ -27,9 +27,9 @@ class OutputVelocitySim : public OutputVelocity
         void setVelocity(ros_msgs_lw::Twist2D const& velocity) override;
 
     private:
-        OutputVelocitySim(ros::NodeHandle& node_handle);
+        OutputVelocitySim(ros::Publisher<ros_msgs::Twist2D>& publisher);
         OutputVelocitySim(OutputVelocitySim const&) = delete;
         ~OutputVelocitySim() {}
 
-        ros::Publisher<ros_msgs::Twist2D> _publisher;
+        ros::Publisher<ros_msgs::Twist2D>& _publisher;
 };

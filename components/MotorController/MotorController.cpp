@@ -19,7 +19,8 @@ timer_config_t MotorController::_timer_config =
     .intr_type = TIMER_INTR_LEVEL,
     .counter_dir = TIMER_COUNT_UP,
     .auto_reload = TIMER_AUTORELOAD_EN,
-    .divider = TIMER_DIVIDER
+    //.clk_src = TIMER_SRC_CLK_APB,         //uncomment to remove warning in IDF v5.0
+    .divider = TIMER_DIVIDER,
 };
 gpio_config_t MotorController::_enable_config = 
 {

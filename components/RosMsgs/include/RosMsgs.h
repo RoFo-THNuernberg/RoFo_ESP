@@ -39,6 +39,11 @@ namespace ros_msgs
                 
                 return sizeof(int32_t) + data.size() + 1;
             }
+
+            static std::string getMsgType()
+            {
+                return "std_msgs/String";
+            }
             
             void serialize(uint8_t* buffer) const override 
             { 
@@ -66,6 +71,7 @@ namespace ros_msgs
             }
 
             std::string data;
+
     };
 
     struct Pose2DSim : RosMsg
@@ -81,6 +87,11 @@ namespace ros_msgs
             size_t getSize() const override 
             { 
                 return _msg_size; 
+            }
+
+            static std::string getMsgType()
+            {
+                return "turtlesim/Pose";
             }
 
             void serialize(uint8_t* buffer) const override 
@@ -127,6 +138,11 @@ namespace ros_msgs
             size_t getSize() const override 
             { 
                 return _msg_size; 
+            }
+
+            static std::string getMsgType()
+            {
+                return "geometry_msgs/Pose2D";
             }
 
             void serialize(uint8_t* buffer) const override 
@@ -189,6 +205,11 @@ namespace ros_msgs
                 return _msg_size; 
             }
 
+            static std::string getMsgType()
+            {
+                return "geometry_msgs/Twist";
+            }
+
             void serialize(uint8_t* buffer) const override 
             { 
                 double* buff = (double*)buffer;
@@ -233,6 +254,11 @@ namespace ros_msgs
             size_t getSize() const override 
             { 
                 return _msg_size; 
+            }
+
+            static std::string getMsgType()
+            {
+                return "geometry_msgs/Point";
             }
 
             void serialize(uint8_t* buffer) const override 

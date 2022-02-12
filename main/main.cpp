@@ -23,7 +23,7 @@
 #define DATA_LOGGING
 #include "DataLogger.h"
 
-//#define USE_SIM
+#define USE_SIM
 #define KALMAN
 //#define STEP_RESPONSE
 
@@ -48,18 +48,19 @@ extern "C" void app_main(void)
 
   Socket& ros_socket = *new Socket(ROS_SOCKET_PORT, SERVER_IP_ADDR);
 
-  MotorController& motor_controller = MotorController::init();
-
-  #ifdef STEP_RESPONSE
-    motor_controller.disablePIcontrol();
-  #endif
-
   #ifdef USE_SIM
     ros::NodeHandle& node_handle = ros::NodeHandle::init("turtle1", ros_socket);
     SensorPose& pose_sensor = SensorPoseSim::init(node_handle);
-    OutputVelocity& output_velocity = OutputVelocitySim::init(node_handle);
+    ros::Publisher<ros_msgs::Twist2D>& output_vel_sim_publisher = node_handle.advertise<ros_msgs::Twist2D>("cmd_vel");
+    OutputVelocity& output_velocity = OutputVelocitySim::init(output_vel_sim_publisher);
   #else
     ros::NodeHandle& node_handle = ros::NodeHandle::init("robot_1", ros_socket);
+
+    MotorController& motor_controller = MotorController::init();
+    #ifdef STEP_RESPONSE
+      motor_controller.disablePIcontrol();
+    #endif
+
     OutputVelocity& output_velocity = OutputVelocityImpl::init(motor_controller);
 
     #ifdef KALMAN
@@ -72,15 +73,14 @@ extern "C" void app_main(void)
 
 
   #ifdef DATA_LOGGING
-    ros::Publisher<ros_msgs::String> data_log_publisher = node_handle.advertise<ros_msgs::String>("data_log");
+    ros::Publisher<ros_msgs::String>& data_log_publisher = node_handle.advertise<ros_msgs::String>("data_log");
     DataLogger& data_logger = DataLogger::init(data_log_publisher);
     node_handle.subscribe<ros_msgs::String>("start_log", std::bind(&DataLogger::startLogCallback, &data_logger, std::placeholders::_1));
   #endif
 
   ControllerMaster& controller_master = ControllerMaster::init(output_velocity, pose_sensor);
 
-  auto pose_feedback = node_handle.advertise<ros_msgs::Pose2D>("pose2D");
-  auto string_pub = node_handle.advertise<ros_msgs::String>("string");
+  ros::Publisher<ros_msgs::Pose2D>& pose_feedback = node_handle.advertise<ros_msgs::Pose2D>("pose2D");
 
   StateMachine& state_machine = StateMachine::init(controller_master, output_velocity);
   node_handle.subscribe<ros_msgs::Point2D>("goal_point", std::bind(&StateMachine::set_goal_point, &state_machine, std::placeholders::_1));
@@ -94,12 +94,12 @@ extern "C" void app_main(void)
     ros_msgs_lw::Pose2D pose;
 
     if(pose_sensor.getPose(pose))
-      ESP_LOGI(TAG, "X: %f, Y: %f, Theta: %f\n", pose.x, pose.y,  pose.theta);
+      ESP_LOGI(TAG, "X: %f, Y: %f, Theta: %f", pose.x, pose.y,  pose.theta);
 
     ros_msgs::Pose2D pose_msg(pose);
 
     pose_feedback.publish(pose_msg);
 
-    vTaskDelay(10 / portTICK_PERIOD_MS);
+    vTaskDelay(100 / portTICK_PERIOD_MS);
   }
 }

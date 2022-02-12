@@ -104,25 +104,6 @@ void KalmanFilter::_kalman_filter_loop_task(void* pvParameters)
         
         for(KalmanSensor const* i : kalman_filter._sensor_list)
         {
-            /*
-            dspm::Mat measurement;
-            if(i->getMeasurement(measurement) == true)
-            {   
-                //ESP_LOGI(TAG, "measurement: %f, %f, %f", measurement(0, 0), measurement(1, 0), measurement(2, 0));
-                dspm::Mat lin_observation_fnc;
-                i->getObservationFnc(lin_observation_fnc, a_priori_estimate);
-                dspm::Mat lin_observation_fnc_transp = lin_observation_fnc.t();
-
-                dspm::Mat kalman_gain = a_priori_cov * lin_observation_fnc_transp * (lin_observation_fnc * a_priori_cov * lin_observation_fnc_transp + i->getMeasurementNoiseCov()).inverse();
-                kalman_filter._a_posterior_estimate = a_priori_estimate + kalman_gain * (measurement - lin_observation_fnc * a_priori_estimate);
-                kalman_filter._a_posterior_cov = (dspm::Mat::eye(3) - kalman_gain * lin_observation_fnc) * a_priori_cov;
-
-
-                //ESP_LOGI(TAG, "a posterior: %f, %f, %f", kalman_filter._a_posterior_estimate.x, kalman_filter._a_posterior_estimate.y, kalman_filter._a_posterior_estimate.theta);
-                update = true;
-            }
-            */
-
             if(i->calculateKalman(a_priori_estimate, a_priori_cov, kalman_filter._a_posterior_estimate, kalman_filter._a_posterior_cov) == true)
             {
                 ESP_LOGI(TAG, "a posterior: %f, %f, %f", kalman_filter._a_posterior_estimate.x, kalman_filter._a_posterior_estimate.y, kalman_filter._a_posterior_estimate.theta);

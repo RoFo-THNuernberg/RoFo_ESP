@@ -85,6 +85,10 @@ extern "C" void app_main(void)
   node_handle.subscribe<ros_msgs::Point2D>("goal_point", std::bind(&StateMachine::set_goal_point, &state_machine, std::placeholders::_1));
   node_handle.subscribe<ros_msgs::Twist2D>("vel", std::bind(&StateMachine::set_velocity, &state_machine, std::placeholders::_1));
 
+  LedStrip& led_strip = LedStrip::init();
+  node_handle.subscribe<ros_msgs::String>("led", std::bind(&LedStrip::animation_callback, &led_strip, std::placeholders::_1));
+
+
   while(1) 
   { 
     ros_msgs_lw::Pose2D pose;

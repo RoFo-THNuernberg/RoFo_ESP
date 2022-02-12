@@ -16,6 +16,8 @@ static uint32_t ws2815_t1l_ticks = 0;
 
 #define RMT_TX_CHANNEL RMT_CHANNEL_0
 
+LedStrip* LedStrip::_led_strip = nullptr;
+
 
 static void IRAM_ATTR ws2815_rmt_adapter(const void *src, rmt_item32_t *dest, size_t src_size,
         size_t wanted_num, size_t *translated_size, size_t *item_num)
@@ -82,10 +84,41 @@ esp_err_t LedStrip::clear(uint32_t timeout_ms)
     return refresh(timeout_ms);
 }
 
+LedStrip::LedStrip() 
+{ 
+    rmt_config_t config = RMT_DEFAULT_CONFIG_TX((gpio_num_t)CONFIG_LED_RMT_TX_GPIO, RMT_TX_CHANNEL);
+    config.clk_div = 2;
+
+    ESP_ERROR_CHECK(rmt_config(&config));
+    ESP_ERROR_CHECK(rmt_driver_install(config.channel, 0, 0));
+
+    
+    led_strip_config_t strip_config;
+    strip_config.max_leds = CONFIG_LED_STRIP_LED_NUMBER;
+    strip_config.dev = config.channel;
+
+    ESP_ERROR_CHECK(led_strip_new_rmt(&strip_config));
+
+    // Clear LED strip (turn off all LEDs)
+    clear(100);
+}
 
 LedStrip::~LedStrip()
 {
     delete[] buffer;
+}
+
+
+void LedStrip::animation_callback(std::shared_ptr<ros_msgs::String> msg)
+{
+    if((*msg).data == "rainbow")
+        animation_rainbow();
+    else if((*msg).data == "pulse")
+        animation_pulse();
+    else if((*msg).data == "line")
+        animation_line();
+    else if((*msg).data == "circle")
+        animation_circle();
 }
 
 
@@ -102,7 +135,6 @@ esp_err_t LedStrip::led_strip_new_rmt(const led_strip_config_t *config)
     }
     // 24 bits per leds TODO
     uint32_t buffer_size = max_leds * 3;
-    printf("%d BUFFER GROESSE\n", buffer_size);
     buffer = new uint8_t[buffer_size];
     if(!buffer)
     {
@@ -130,32 +162,15 @@ esp_err_t LedStrip::led_strip_new_rmt(const led_strip_config_t *config)
     //set ws2815 to rmt adapter
     rmt_translator_init(config->dev, ws2815_rmt_adapter);   
 
-
-   
-
-
     return ESP_OK;
 }
 
-void LedStrip::init()
+LedStrip& LedStrip::init()
 {
-    rmt_config_t config = RMT_DEFAULT_CONFIG_TX((gpio_num_t)CONFIG_LED_RMT_TX_GPIO, RMT_TX_CHANNEL);
-    config.clk_div = 2;
+    if(_led_strip == nullptr)
+        _led_strip = new LedStrip;
 
-    ESP_ERROR_CHECK(rmt_config(&config));
-    ESP_ERROR_CHECK(rmt_driver_install(config.channel, 0, 0));
-
-    
-    led_strip_config_t strip_config;
-    strip_config.max_leds = CONFIG_LED_STRIP_LED_NUMBER;
-    strip_config.dev = config.channel;
-
-    ESP_ERROR_CHECK(led_strip_new_rmt(&strip_config));
-
-    // Clear LED strip (turn off all LEDs)
-    clear(100);
-
-
+    return *_led_strip;
 }
 
 void LedStrip::hsv2rgb(uint32_t h, uint32_t s, uint32_t v, uint32_t *r, uint32_t *g, uint32_t *b)
@@ -217,7 +232,7 @@ void LedStrip::animation_rainbow()
     refresh(0);
     clear(0);
 
-    hue += 1;
+    hue += 3;
 
 }
 
@@ -284,7 +299,7 @@ void LedStrip::animation_circle()
             set_pixel(circle_inner[i], red, green, blue);
         }
         refresh(0);
-        clear(0);
+        //clear(0);
     }
 
     if(counter_circle == 1)
@@ -299,7 +314,7 @@ void LedStrip::animation_circle()
             set_pixel(circle_middle_1[i], red, green, blue);
         }
         refresh(0);
-        clear(0);   
+        //clear(0);   
     }
 
     if(counter_circle == 2)

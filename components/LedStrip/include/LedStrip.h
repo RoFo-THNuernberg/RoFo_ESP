@@ -2,11 +2,16 @@
 
 #include <cstring>
 #include <stdint.h>
+#include <memory>
+
 #include "driver/rmt.h"
 #include "esp_log.h"
 #include "esp_attr.h"
 #include <sys/cdefs.h>
 #include "sdkconfig.h"
+
+#include "RosMsgs.h"
+#include "Subscriber.h"
 
 
 
@@ -37,9 +42,6 @@ struct LedStrip {
     int current_index = 0;
     int prev_index = 0;
     int counter_circle = 0;
-
-
-    ~LedStrip(); 
 
 
     /**
@@ -114,7 +116,9 @@ struct LedStrip {
     * @brief sets the led strip up ready for animations
     *
     */
-    void init();
+    static LedStrip& init();
+
+    void animation_callback(std::shared_ptr<ros_msgs::String> msg);
 
     // Animations
     void animation_rainbow();
@@ -122,7 +126,13 @@ struct LedStrip {
     void animation_pulse();
     void animation_circle();
 
+    private:
+        LedStrip();
+        ~LedStrip();
 
+        LedStrip(LedStrip const&) = delete;
+
+        static LedStrip* _led_strip;
 };
 
 

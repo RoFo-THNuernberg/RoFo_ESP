@@ -1,5 +1,7 @@
 #include "LedStrip.h"
 
+#include "esp_log.h"
+
 static const char *TAG = "ws2815";
 
 

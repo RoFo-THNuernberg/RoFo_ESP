@@ -3,7 +3,6 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "esp_err.h"
-#include "esp_log.h"
 #include "driver/mcpwm.h"
 #include "soc/rtc.h"
 
@@ -13,8 +12,8 @@
 class Motor
 {
     public:
-        static Motor& getMotorA();
-        static Motor& getMotorB();
+        static Motor& init_a();
+        static Motor& init_b();
 
         /**
          * @brief Set the target angular velocity for the motor in RAD/s

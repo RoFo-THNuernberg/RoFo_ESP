@@ -22,7 +22,7 @@ class MotorController
          * 
          * @return Reference to MotorController instance
          */ 
-        static MotorController& init();
+        static MotorController& init(Motor& motor_a, Motor& motor_b);
 
         /**
          * @brief Set the velocity of both motors in RAD/s
@@ -47,7 +47,7 @@ class MotorController
         void disablePIcontrol();
 
     private:
-        MotorController();
+        MotorController(Motor& motor_a, Motor& motor_b);
         MotorController(MotorController const&) = delete;
         ~MotorController() {};
 

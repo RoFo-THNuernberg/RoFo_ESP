@@ -14,6 +14,18 @@ menu "Data Logger"
         help
             Size of each heap buffer, which stores the data logs.
             Small values will lead to many heap allocations.
-            
+
+    config DATA_LOG_QUEUE_SIZE
+        int "log queue size"
+        default 32
+        help
+            Maximum size of FreeRTOS queue.
+            Check available dynamic memory for calculating this value.
+    
+    config MAX_LOG_TIME_SECONDS
+        int "maximum logging time in seconds"
+        default 120
+        help
+            Maximum logging time in seconds.
 
 endmenu

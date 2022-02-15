@@ -1,7 +1,6 @@
 #pragma once
 
 #include "esp_err.h"
-#include "esp_log.h"
 #include "math.h"
 
 #include "mat.h"

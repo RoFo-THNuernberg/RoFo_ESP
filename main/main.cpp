@@ -1,5 +1,6 @@
 #include "esp_err.h"
 #include "nvs_flash.h"
+#include "esp_log.h"
 
 #include "Wifi.h"
 #include "SensorPose.h"
@@ -14,6 +15,7 @@
 #include "OutputVelocitySim.h"
 #include "OutputVelocityImpl.h"
 #include "KalmanFilter.h"
+#include "Motor.h"
 #include "MotorController.h"
 #include "ControllerMaster.h"
 #include "LedStrip.h"
@@ -23,7 +25,7 @@
 #define DATA_LOGGING
 #include "DataLogger.h"
 
-#define USE_SIM
+//#define USE_SIM
 #define KALMAN
 //#define STEP_RESPONSE
 
@@ -56,7 +58,9 @@ extern "C" void app_main(void)
   #else
     ros::NodeHandle& node_handle = ros::NodeHandle::init("robot_1", ros_socket);
 
-    MotorController& motor_controller = MotorController::init();
+    Motor& motor_a = Motor::init_a();
+    Motor& motor_b = Motor::init_b();
+    MotorController& motor_controller = MotorController::init(motor_a, motor_b);
     #ifdef STEP_RESPONSE
       motor_controller.disablePIcontrol();
     #endif
@@ -75,7 +79,7 @@ extern "C" void app_main(void)
   #ifdef DATA_LOGGING
     ros::Publisher<ros_msgs::String>& data_log_publisher = node_handle.advertise<ros_msgs::String>("data_log");
     DataLogger& data_logger = DataLogger::init(data_log_publisher);
-    node_handle.subscribe<ros_msgs::String>("start_log", std::bind(&DataLogger::startLogCallback, &data_logger, std::placeholders::_1));
+    node_handle.subscribe<ros_msgs::String>("start_log", std::bind(&DataLogger::startLogging, &data_logger, std::placeholders::_1));
   #endif
 
   ControllerMaster& controller_master = ControllerMaster::init(output_velocity, pose_sensor);

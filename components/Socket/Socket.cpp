@@ -1,5 +1,7 @@
 #include "Socket.h"
 
+#include "esp_log.h"
+
 #define TAG "Socket"
 
 Socket::Socket(int port, std::string ip_addr) : _port{port}, _ip_addr{ip_addr}

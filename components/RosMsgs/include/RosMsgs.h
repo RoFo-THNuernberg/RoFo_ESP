@@ -4,7 +4,6 @@
 #include <cstring>
 #include <array>
 
-#include "esp_log.h"
 #include "math.h"
 
 #include "msg_id.h"

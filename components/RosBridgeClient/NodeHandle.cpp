@@ -1,5 +1,7 @@
 #include "NodeHandle.h"
 
+#include "esp_log.h"
+
 namespace ros
 {   
     #define TAG "NodeHandle"

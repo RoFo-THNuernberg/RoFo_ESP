@@ -1,7 +1,6 @@
 #include "Wifi.h"
 
-#include <cstring>
-
+#include "esp_log.h"
    
 #define TAG "Wifi"
 

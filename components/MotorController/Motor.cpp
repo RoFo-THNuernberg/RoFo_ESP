@@ -34,7 +34,7 @@ Motor::Motor(mcpwm_unit_t mcpwm_unit, mcpwm_pin_config_t motor_pins, bool motor_
     ESP_ERROR_CHECK(mcpwm_capture_enable_channel(_mcpwm_unit, MCPWM_SELECT_CAP1, &_mcpwm_capture_config_1));
 }
 
-Motor& Motor::getMotorA()
+Motor& Motor::init_a()
 {
     if(_motor_a == nullptr)
     {
@@ -64,7 +64,7 @@ Motor& Motor::getMotorA()
     return *_motor_a;
 }
 
-Motor& Motor::getMotorB()
+Motor& Motor::init_b()
 {
     if(_motor_b == nullptr)
     {

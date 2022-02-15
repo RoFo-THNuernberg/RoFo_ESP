@@ -31,7 +31,7 @@ gpio_config_t MotorController::_enable_config =
     .intr_type = GPIO_INTR_DISABLE
 };
 
-MotorController::MotorController() : _motor_a(Motor::getMotorA()), _motor_b(Motor::getMotorB()) 
+MotorController::MotorController(Motor& motor_a, Motor& motor_b) : _motor_a(motor_a), _motor_b(motor_b) 
 {
     xTaskCreate(_motor_control_loop_task, "_motor_control_loop_task", 2048, this, 10, &_control_loop_task);
 
@@ -51,10 +51,10 @@ MotorController::MotorController() : _motor_a(Motor::getMotorA()), _motor_b(Moto
     gpio_set_level(_enable_pin, 1);
 }
 
-MotorController& MotorController::init()
+MotorController& MotorController::init(Motor& motor_a, Motor& motor_b)
 {
     if(_motor_controller == nullptr)
-        _motor_controller = new MotorController();
+        _motor_controller = new MotorController(motor_a, motor_b);
 
     return *_motor_controller;
 }

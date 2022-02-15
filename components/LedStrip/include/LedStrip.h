@@ -5,7 +5,6 @@
 #include <memory>
 
 #include "driver/rmt.h"
-#include "esp_log.h"
 #include "esp_attr.h"
 #include <sys/cdefs.h>
 #include "sdkconfig.h"

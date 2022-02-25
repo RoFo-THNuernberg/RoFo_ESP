@@ -1,15 +1,14 @@
 #include "statInOutLinController.h"
 
-statInOutLinController::statInOutLinController(float kp_1, float kp_2, float b_offset, ros_msgs::Trajectory const& trajectory) : 
-    _kp_1{kp_1}, _kp_2{kp_2}, _b_offset{b_offset}, _trajectory{trajectory} {}
+statInOutLinController::statInOutLinController(std::shared_ptr<ros_msgs::Trajectory> trajectory) : _trajectory{trajectory} {}
 
 ros_msgs_lw::Twist2D statInOutLinController::update(ros_msgs_lw::Pose2D const& actual_pose) 
 {   
     ros_msgs_lw::Twist2D output_vel;
 
-    if(_trajectory_cntr < _trajectory.getTrajectorySize())
+    if(_trajectory_cntr < _trajectory->getTrajectorySize())
     {
-        ros_msgs::TrajectoryStateVector const&  setpoint_vector = _trajectory[_trajectory_cntr];
+        ros_msgs::TrajectoryStateVector const&  setpoint_vector = (*_trajectory)[_trajectory_cntr];
         _trajectory_cntr++;
 
         //calculate current position of point b

@@ -1,8 +1,10 @@
 #include "p2pController.h"
 
+#include "esp_log.h"
 
+#define TAG "p2pController"
 
-p2pController::p2pController(float kp_v, float kp_w, ros_msgs_lw::Point2D const& goal_point) : _kp_v{kp_v}, _kp_w{kp_w}, _goal_point{goal_point} {}
+p2pController::p2pController(ros_msgs_lw::Point2D const& goal_point) : _goal_point{goal_point} {}
 
 ros_msgs_lw::Twist2D p2pController::update(ros_msgs_lw::Pose2D const& actual_pose)
 {   
@@ -13,9 +15,9 @@ ros_msgs_lw::Twist2D p2pController::update(ros_msgs_lw::Pose2D const& actual_pos
 
     //Calculate orientation error and keep it between -pi - pi
     float error_theta = setpoint_theta - actual_pose.theta;
-    //ESP_LOGI("p2p", "error: %f, actual_pose: %f, %f, %f", error_theta, actual_pose.x, actual_pose.y, actual_pose.theta);
     error_theta = atan2(sin(error_theta), cos(error_theta)); 
-
+    //ESP_LOGI(TAG, "error: %f, actual_pose: %f, %f, %f", error_theta, actual_pose.x, actual_pose.y, actual_pose.theta);
+    
     //calculate distance error
     float error_dist = sqrt(pow(_goal_point.x - actual_pose.x, 2) + pow(_goal_point.y - actual_pose.y, 2));  
 

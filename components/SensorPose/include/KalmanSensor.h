@@ -12,8 +12,8 @@
 class KalmanSensor
 {
     public:
-        KalmanSensor();
-        ~KalmanSensor();
+        KalmanSensor() {}
+        ~KalmanSensor() {}
 
         virtual void calculateMeasurementNoiseCov() const = 0;
 

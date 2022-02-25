@@ -13,14 +13,14 @@
 class p2pController : public PositionController
 {
     public:
-        explicit p2pController(float kp_v, float kp_w, ros_msgs_lw::Point2D const& goal_point);
+        explicit p2pController(ros_msgs_lw::Point2D const& goal_point);
 
         ros_msgs_lw::Twist2D update(ros_msgs_lw::Pose2D const& actual_pose) override;
         bool destination_reached() override;
 
     private:
-        float _kp_v;
-        float _kp_w;
+        float _kp_v = 0.2;
+        float _kp_w = 0.8;
 
         ros_msgs_lw::Point2D const _goal_point;
         

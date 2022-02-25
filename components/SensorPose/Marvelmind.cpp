@@ -1,9 +1,9 @@
 #include "Marvelmind.h"
 
-#define UART_RX_BUFFER 512
-#define UART_TX_PIN 27
-#define UART_RX_PIN 26
-#define UART_BAUDRATE 115200
+#define UART_TX_PIN CONFIG_UART_TX_PIN
+#define UART_RX_PIN CONFIG_UART_RX_PIN
+#define UART_BAUDRATE CONFIG_UART_BAUDRATE
+#define UART_RX_BUFFER CONFIG_UART_RX_BUFFER
 
 #define TAG "Marvelmind_Pose"
 
@@ -46,7 +46,7 @@ const uart_config_t Marvelmind::_uart_conf =
     .source_clk = UART_SCLK_APB     
 };
 
-Marvelmind::Marvelmind() : _measurement_noise_cov(0.01 * dspm::Mat::eye(3))
+Marvelmind::Marvelmind() : _measurement_noise_cov(3, 3)
 {   
     _measurement_noise_cov(0, 0) = 0.000002; 
     _measurement_noise_cov(0, 1) = -0.000001;
@@ -81,6 +81,23 @@ Marvelmind& Marvelmind::init()
         _marvelmind_sensor = new Marvelmind;
 
     return *_marvelmind_sensor;
+}
+
+bool Marvelmind::peekAtPose(ros_msgs_lw::Pose2D& current_pose) const
+{
+    if(xQueuePeek(_current_pose_queue, &current_pose, 0) == pdPASS)
+        return true;
+
+    return false;
+}
+
+
+bool Marvelmind::getPose(ros_msgs_lw::Pose2D& current_pose) const
+{
+    if(xQueueReceive(_current_pose_queue, &current_pose, 0) == pdPASS)
+        return true;
+
+    return false;
 }
 
 void Marvelmind::calculateMeasurementNoiseCov() const
@@ -209,7 +226,6 @@ void Marvelmind::_uart_read_data_task(void* pvParameters)
 
                 current_pose.theta = atan2(sin(current_pose.theta), cos(current_pose.theta));
 
-                xQueueOverwrite(marvelmind->SensorPose::_current_pose_queue, &current_pose);
                 xQueueOverwrite(marvelmind->_current_pose_queue, &current_pose);
 
                 break;

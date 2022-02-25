@@ -18,6 +18,7 @@ class StateMachine
 
         void set_velocity(std::shared_ptr<ros_msgs::Twist2D> vel_vector);
         void set_goal_point(std::shared_ptr<ros_msgs::Point2D> goal_point);
+        void set_trajectory(std::shared_ptr<ros_msgs::Trajectory> trajectory);
         void stop();
 
         ControllerMaster& controller_master;

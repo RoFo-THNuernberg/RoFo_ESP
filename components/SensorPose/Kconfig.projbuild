@@ -6,7 +6,7 @@ menu "Marvelmind"
 
     config UART_RX_PIN
         int "Uart Rx Pin"
-        default "28"
+        default "26"
 
     config UART_BAUDRATE
         int "Uart Baudrate"

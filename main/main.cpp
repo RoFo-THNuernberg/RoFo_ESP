@@ -25,7 +25,7 @@
 #define DATA_LOGGING
 #include "DataLogger.h"
 
-#define USE_SIM
+//#define USE_SIM
 #define KALMAN
 //#define STEP_RESPONSE
 
@@ -105,15 +105,13 @@ extern "C" void app_main(void)
   { 
     ros_msgs_lw::Pose2D pose;
 
-    while(!pose_sensor.peekAtPose(pose))
+    if(!pose_sensor.peekAtPose(pose))
     {
       //ESP_LOGI(TAG, "X: %f, Y: %f, Theta: %f", pose.x, pose.y,  pose.theta);
-      vTaskDelay(10 / portTICK_PERIOD_MS);
+
+      ros_msgs::Pose2D pose_msg(pose);
+      pose_feedback.publish(pose_msg);
     }
-
-    ros_msgs::Pose2D pose_msg(pose);
-
-    pose_feedback.publish(pose_msg);
 
     vTaskDelay(100 / portTICK_PERIOD_MS);
   }

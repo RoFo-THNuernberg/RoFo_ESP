@@ -3,6 +3,7 @@
 #include "esp_err.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "freertos/semphr.h"
 
 #include "lwip/sockets.h"
 #include "lwip/inet.h"
@@ -33,12 +34,19 @@ class Socket
         void connect_socket();    
         void disconnect_socket();
 
+        bool sendFailed();
+
     private:
         Socket(const Socket&) = delete;
 
-        int _port;
+        int _connection_fd;
+
+        bool _send_failed = false;
+
+        int const _socket_port;
         std::string _ip_addr;
 
-        int _connection_fd;
         struct sockaddr_in _server_socket;
+
+        SemaphoreHandle_t _send_mutx;
 };

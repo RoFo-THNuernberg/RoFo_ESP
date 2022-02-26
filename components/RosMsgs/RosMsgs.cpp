@@ -7,7 +7,7 @@ namespace ros_msgs
     size_t const Pose2D::_msg_size = 24;
     size_t const Twist2D::_msg_size = 16;
     size_t const Point2D::_msg_size = 16;
-    size_t const TrajectoryStateVector::_msg_size = 24;
+    size_t const TrajectoryStateVector::_msg_size = 36;
 
 
 

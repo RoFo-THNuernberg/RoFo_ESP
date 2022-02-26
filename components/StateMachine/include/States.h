@@ -1,8 +1,8 @@
 #pragma once
 
 #include "ControllerMaster.h"
-#include "p2pController.h"
 #include "OutputVelocity.h"
+#include "RosMsgs.h"
 #include "RosMsgsLw.h"
 
 #include <functional>
@@ -18,6 +18,7 @@ class State
         virtual std::string getState() const = 0; 
         virtual void set_velocity(StateMachine&, std::shared_ptr<ros_msgs::Twist2D>) = 0;
         virtual void set_goal_point(StateMachine&, std::shared_ptr<ros_msgs::Point2D>) = 0;
+        virtual void set_trajectory(StateMachine&, std::shared_ptr<ros_msgs::Trajectory>) = 0;
         virtual void stop(StateMachine&) = 0;
 };
 
@@ -27,6 +28,7 @@ class Idle : public State
         std::string getState() const override { return _state; }
         void set_velocity(StateMachine&, std::shared_ptr<ros_msgs::Twist2D>) override;
         void set_goal_point(StateMachine&, std::shared_ptr<ros_msgs::Point2D>) override;
+        void set_trajectory(StateMachine&, std::shared_ptr<ros_msgs::Trajectory>) override;
         void stop(StateMachine&) override {}
 
     private:
@@ -39,6 +41,7 @@ class DriveWithVelocity : public State
         std::string getState() const override { return _state; }
         void set_velocity(StateMachine&, std::shared_ptr<ros_msgs::Twist2D>) override;
         void set_goal_point(StateMachine&, std::shared_ptr<ros_msgs::Point2D>) override {}
+        void set_trajectory(StateMachine&, std::shared_ptr<ros_msgs::Trajectory>) override {}
         void stop(StateMachine&) override;
         
     private:
@@ -51,8 +54,22 @@ class DriveToPoint : public State
         std::string getState() const override { return _state; }
         void set_velocity(StateMachine&, std::shared_ptr<ros_msgs::Twist2D>) override;
         void set_goal_point(StateMachine&, std::shared_ptr<ros_msgs::Point2D>) override;
+        void set_trajectory(StateMachine&, std::shared_ptr<ros_msgs::Trajectory>) override {}
         void stop(StateMachine&) override;
         
+    private:
+        static std::string const _state;
+};
+
+class FollowTrajectory : public State
+{
+    public:
+        std::string getState() const override { return _state; }
+        void set_velocity(StateMachine&, std::shared_ptr<ros_msgs::Twist2D>) override;
+        void set_goal_point(StateMachine&, std::shared_ptr<ros_msgs::Point2D>) override {}
+        void set_trajectory(StateMachine&, std::shared_ptr<ros_msgs::Trajectory>) override;
+        void stop(StateMachine&) override;
+
     private:
         static std::string const _state;
 };

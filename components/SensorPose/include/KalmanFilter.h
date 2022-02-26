@@ -7,6 +7,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/timers.h"
 #include "freertos/task.h"
+#include "freertos/queue.h"
 #include "freertos/semphr.h"
 #include "math.h"
 
@@ -22,6 +23,8 @@ class KalmanFilter : public SensorPose
         //The first sensor in the list must be of absolute type
         static SensorPose& init(std::initializer_list<KalmanSensor const*> const& sensor_list, OutputVelocity const& output_velocity);
 
+        bool peekAtPose(ros_msgs_lw::Pose2D& current_pose) const override;
+        bool getPose(ros_msgs_lw::Pose2D& current_pose) const override;
         void reInit() override;
 
     private:
@@ -43,10 +46,13 @@ class KalmanFilter : public SensorPose
         ros_msgs_lw::Pose2D _a_posterior_estimate;
         dspm::Mat _a_posterior_cov;
 
-        float _process_noise_variance = 0.0000001;
+        float const _process_noise_variance = 0.0000001;
         dspm::Mat _process_noise_cov;
 
         uint64_t _timestamp_us;
+
+        QueueHandle_t _current_pose_queue;
+        QueueHandle_t _peek_at_pose_queue;
 
         SemaphoreHandle_t _reinitialize_sensor_semphr;
 

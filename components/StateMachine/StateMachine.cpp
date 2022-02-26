@@ -36,6 +36,11 @@ void StateMachine::set_goal_point(std::shared_ptr<ros_msgs::Point2D> goal_point)
     _current_state->set_goal_point(*this, goal_point);
 }
 
+void StateMachine::set_trajectory(std::shared_ptr<ros_msgs::Trajectory> trajectory)
+{
+    _current_state->set_trajectory(*this, trajectory);
+}
+
 void StateMachine::stop()
 {
     _current_state->stop(*this);

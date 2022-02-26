@@ -8,6 +8,8 @@
 #include "RosMsgs.h"
 #include "Socket.h"
 
+#include "esp_log.h"
+
 namespace ros
 {  
 
@@ -51,8 +53,10 @@ namespace ros
 
         if(msg_len == 0)
         {
-            if(_sock.socket_receive((uint8_t*)&msg_len, sizeof(msg_len)) == SOCKET_FAIL)
+            if(_sock.socket_receive((uint8_t*)&msg_len, sizeof(int32_t)) == SOCKET_FAIL)
                 return false;
+
+            ros_msg->allocateMemory(msg_len);
         }
 
         uint8_t* rx_buffer = new uint8_t[msg_len];

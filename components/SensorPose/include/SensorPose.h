@@ -7,17 +7,13 @@
 
 class SensorPose {
     public:
-        bool getPose(ros_msgs_lw::Pose2D& current_pose) const;
-
+        virtual bool peekAtPose(ros_msgs_lw::Pose2D& current_pose) const = 0;
+        virtual bool getPose(ros_msgs_lw::Pose2D& current_pose) const = 0;
         virtual void reInit() = 0;
 
     protected:
-        SensorPose();
-        ~SensorPose();
-
-        QueueHandle_t _current_pose_queue;
-
-    private:
+        SensorPose() {}
+        ~SensorPose() {}
         SensorPose(SensorPose const&) = delete;
         
 };

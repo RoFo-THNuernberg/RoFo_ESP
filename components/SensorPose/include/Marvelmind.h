@@ -6,10 +6,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "freertos/semphr.h"
-
 #include "driver/uart.h"
-
-#include "math.h"
 
 #include "RosMsgsLw.h"
 #include "SensorPose.h"
@@ -21,6 +18,8 @@ class Marvelmind : public KalmanSensor, public SensorPose
     public:
         static Marvelmind& init();
 
+        bool peekAtPose(ros_msgs_lw::Pose2D& current_pose) const override; 
+        bool getPose(ros_msgs_lw::Pose2D& current_pose) const override;
         void reInit() override {}
 
         void calculateMeasurementNoiseCov() const override;

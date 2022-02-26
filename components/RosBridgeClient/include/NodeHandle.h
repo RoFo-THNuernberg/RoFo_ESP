@@ -33,7 +33,7 @@ namespace ros
             ~NodeHandle();
 
             int _send_init();
-            int _send_keep_alive();
+            void _send_keep_alive();
             void _restart_protocol();
             int _interpret_receive();
 

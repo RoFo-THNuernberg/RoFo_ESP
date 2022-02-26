@@ -25,7 +25,7 @@
 #define DATA_LOGGING
 #include "DataLogger.h"
 
-//#define USE_SIM
+#define USE_SIM
 #define KALMAN
 //#define STEP_RESPONSE
 
@@ -52,9 +52,16 @@ extern "C" void app_main(void)
 
   #ifdef USE_SIM
     ros::NodeHandle& node_handle = ros::NodeHandle::init("turtle1", ros_socket);
-    SensorPose& pose_sensor = SensorPoseSim::init(node_handle);
+    
     ros::Publisher<ros_msgs::Twist2D>& output_vel_sim_publisher = node_handle.advertise<ros_msgs::Twist2D>("cmd_vel");
     OutputVelocity& output_velocity = OutputVelocitySim::init(output_vel_sim_publisher);
+
+    #ifdef KALMAN
+      SensorPoseSim& sim_sensor = SensorPoseSim::init(node_handle);
+      SensorPose& pose_sensor = KalmanFilter::init({&sim_sensor}, output_velocity);
+    #else
+      SensorPose& pose_sensor = SensorPoseSim::init(node_handle);
+    #endif
   #else
     ros::NodeHandle& node_handle = ros::NodeHandle::init("robot_1", ros_socket);
 
@@ -89,6 +96,7 @@ extern "C" void app_main(void)
   StateMachine& state_machine = StateMachine::init(controller_master, output_velocity);
   node_handle.subscribe<ros_msgs::Point2D>("goal_point", std::bind(&StateMachine::set_goal_point, &state_machine, std::placeholders::_1));
   node_handle.subscribe<ros_msgs::Twist2D>("vel", std::bind(&StateMachine::set_velocity, &state_machine, std::placeholders::_1));
+  node_handle.subscribe<ros_msgs::Trajectory>("trajectory", std::bind(&StateMachine::set_trajectory, &state_machine, std::placeholders::_1));
 
   LedStrip& led_strip = LedStrip::init();
   node_handle.subscribe<ros_msgs::String>("led", std::bind(&LedStrip::animation_callback, &led_strip, std::placeholders::_1));
@@ -97,12 +105,13 @@ extern "C" void app_main(void)
   { 
     ros_msgs_lw::Pose2D pose;
 
-    if(pose_sensor.getPose(pose))
-      ESP_LOGI(TAG, "X: %f, Y: %f, Theta: %f", pose.x, pose.y,  pose.theta);
+    if(pose_sensor.peekAtPose(pose))
+    {
+      //ESP_LOGI(TAG, "X: %f, Y: %f, Theta: %f", pose.x, pose.y,  pose.theta);
 
-    ros_msgs::Pose2D pose_msg(pose);
-
-    pose_feedback.publish(pose_msg);
+      ros_msgs::Pose2D pose_msg(pose);
+      pose_feedback.publish(pose_msg);
+    }
 
     vTaskDelay(100 / portTICK_PERIOD_MS);
   }

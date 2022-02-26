@@ -52,7 +52,7 @@ namespace ros
                 i->block_publishing();
 
             _sock.disconnect_socket();
-            vTaskDelay(3000 / portTICK_PERIOD_MS);
+            vTaskDelay((2000 + MAX_KEEP_ALIVE_TIMOUT_MS)  / portTICK_PERIOD_MS);
             _sock.connect_socket();
 
             _send_init();
@@ -91,7 +91,7 @@ namespace ros
         return _sock.socket_send(pkt_buffer, pkt_len);
     }
 
-    int NodeHandle::_send_keep_alive()
+    void NodeHandle::_send_keep_alive()
     {   
         uint64_t time_now_us = esp_timer_get_time();
 
@@ -108,10 +108,8 @@ namespace ros
 
             _last_send_keep_alive_us = time_now_us;
 
-            return _sock.socket_send(pkt_buffer, pkt_len);
+            _sock.socket_send(pkt_buffer, pkt_len);
         }
-
-        return -1;
     }
 
     void NodeHandle::_communication_handler(void* arg)
@@ -119,14 +117,20 @@ namespace ros
         NodeHandle* node_handle = (NodeHandle*)arg;
 
         while(1)
-        {   
-            if(node_handle->_send_keep_alive() != -1)
-                if(node_handle->_interpret_receive() == -1)
-                {
-                    ESP_LOGE(TAG,"Interpret Receive failed!");
-                    node_handle->_restart_protocol();
-                }
-                
+        {      
+            if(node_handle->_sock.sendFailed() == true)
+            {
+                ESP_LOGE(TAG, "Sending failed!");
+                node_handle->_restart_protocol();
+            }
+
+            node_handle->_send_keep_alive();   
+
+            if(node_handle->_interpret_receive() == -1)
+            {
+                ESP_LOGE(TAG,"Interpret Receive failed!");
+                node_handle->_restart_protocol();
+            }
             
             vTaskDelay(50 / portTICK_PERIOD_MS);
         }

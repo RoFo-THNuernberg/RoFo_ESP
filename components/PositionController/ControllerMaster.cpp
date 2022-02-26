@@ -1,5 +1,7 @@
 #include "ControllerMaster.h"
 
+#include "esp_log.h"
+
 #define TAG "ControllerMaster"
 
 
@@ -9,7 +11,7 @@ ControllerMaster::ControllerMaster(OutputVelocity& output_velocity, SensorPose& 
 {   
     _pos_controller_mutx = xSemaphoreCreateMutex();
 
-    xTaskCreate(_control_loop_task, "control_loop_task", 2048, this, 8, &_control_loop_task_handle);
+    xTaskCreate(_control_loop_task, "control_loop_task", 4096, this, 8, &_control_loop_task_handle);
     _control_loop_timer_handle = xTimerCreate("control_loop", pdMS_TO_TICKS(10), pdTRUE, NULL, _control_loop_timer);
 
     _controller_is_stopped = true;
@@ -20,6 +22,7 @@ ControllerMaster::~ControllerMaster()
 {
     xTimerDelete(_control_loop_timer_handle, portMAX_DELAY);
     vTaskDelete(_control_loop_task_handle);
+    vSemaphoreDelete(_pos_controller_mutx);
 
     if(_pos_controller != nullptr)
         delete _pos_controller;
@@ -63,8 +66,6 @@ void ControllerMaster::_control_loop_timer(TimerHandle_t timer)
 void ControllerMaster::stop_controller()
 {
     _controller_is_stopped = true;
-
-    _output_velocity.setVelocity(ros_msgs_lw::Twist2D(0, 0));
 }
 
 void ControllerMaster::_control_loop_task(void* pvParameters)
@@ -76,8 +77,16 @@ void ControllerMaster::_control_loop_task(void* pvParameters)
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 
         if(controller_obj._controller_is_stopped == true)
-            while(xTimerStop(controller_obj._control_loop_timer_handle, portMAX_DELAY) == pdFALSE) {}
-            
+        {
+            if(xTimerStop(controller_obj._control_loop_timer_handle, portMAX_DELAY) == pdPASS)
+            {
+                controller_obj._output_velocity.setVelocity(ros_msgs_lw::Twist2D(0, 0));
+
+                ESP_LOGI(TAG, "Deleting Position Controller object.");
+                delete controller_obj._pos_controller;
+                controller_obj._pos_controller = nullptr;
+            }
+        }
         else if(xSemaphoreTake(controller_obj._pos_controller_mutx, 0) == pdPASS)
         {
             //Input
@@ -96,7 +105,8 @@ void ControllerMaster::_control_loop_task(void* pvParameters)
                 controller_obj._output_velocity.setVelocity(output_vel);
 
                 if(controller_obj._pos_controller->destination_reached() == true)
-                {
+                {   
+                    controller_obj.stop_controller(); 
                     controller_obj._destination_reached_callback();
                 }
             }

@@ -97,7 +97,7 @@ void DataLogger::_data_logger_task(void *pvParameters)
         if(xQueueReceive(data_logger._log_buffer_queue, &log_buffer, portMAX_DELAY) == pdPASS)
         {
             ros_msgs::String msg;
-            msg.deserialize(reinterpret_cast<uint8_t*>(log_buffer));
+            msg.data.assign(log_buffer);
 
             data_logger._publisher.publish(msg);
 

@@ -2,10 +2,16 @@
 
 #include "esp_log.h"
 
+//#define DATA_LOGGING
+#include "DataLogger.h"
+
 #define TAG "dynInOutLinController"
 
 dynInOutLinController::dynInOutLinController(std::shared_ptr<ros_msgs::Trajectory> trajectory) : 
-    _prev_time_us{(uint64_t)esp_timer_get_time()},  _trajectory{trajectory} {}
+    _prev_time_us{(uint64_t)esp_timer_get_time()},  _trajectory{trajectory} 
+{
+    _prev_velocity = sqrt(pow((*_trajectory)[0].dx, 2) + pow((*_trajectory)[0].dy, 2));
+}
 
 ros_msgs_lw::Twist2D dynInOutLinController::update(ros_msgs_lw::Pose2D const& actual_pose)
 {   
@@ -13,22 +19,20 @@ ros_msgs_lw::Twist2D dynInOutLinController::update(ros_msgs_lw::Pose2D const& ac
 
     if(_trajectory_cntr < _trajectory->getTrajectorySize())
     {
-        ros_msgs::TrajectoryStateVector const&  setpoint_vector = (*_trajectory)[_trajectory_cntr];
-        _trajectory_cntr++;
-
         /*calculate time since last excecution*/
         uint64_t current_time_us = esp_timer_get_time();
         uint64_t delta_time_us = current_time_us - _prev_time_us;
         _prev_time_us = current_time_us;
 
-        //float actual_dx = (actual_pose.x - _prev_pose.x) / delta_time_us * 1000000.0;
-        //float actual_dy = (actual_pose.y - _prev_pose.y) / delta_time_us * 1000000.0;
+        ros_msgs::TrajectoryStateVector const&  setpoint_vector = (*_trajectory)[_trajectory_cntr];
+        _trajectory_cntr++;
+
+        LOG_DATA("%.2f, %.2f, %.2f, %.2f\n", setpoint_vector.x, setpoint_vector.y, actual_pose.x, actual_pose.y);
+
 
         float actual_dx = _prev_velocity * cos(actual_pose.theta);
         float actual_dy = _prev_velocity * sin(actual_pose.theta);
 
-        _prev_pose.x = actual_pose.x;
-        _prev_pose.y = actual_pose.y;
         
         float u1 = setpoint_vector.ddx + _kp_1 * (setpoint_vector.x - actual_pose.x) + _kd_1 * (setpoint_vector.dx - actual_dx);
         float u2 = setpoint_vector.ddy + _kp_2 * (setpoint_vector.y - actual_pose.y) + _kd_2 * (setpoint_vector.dy - actual_dy);

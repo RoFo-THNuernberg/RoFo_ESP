@@ -1,5 +1,7 @@
 #include "Marvelmind.h"
 
+#include "esp_log.h"
+
 #define UART_TX_PIN CONFIG_UART_TX_PIN
 #define UART_RX_PIN CONFIG_UART_RX_PIN
 #define UART_BAUDRATE CONFIG_UART_BAUDRATE

@@ -1,6 +1,6 @@
 #include "MotorController.h"
 
-#define DATA_LOGGING
+//#define DATA_LOGGING
 #include "DataLogger.h"
 
 #define ENABLE_PIN CONFIG_ENABLE_PIN

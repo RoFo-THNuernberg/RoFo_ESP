@@ -34,7 +34,12 @@ namespace ros_msgs
                 return sizeof(int32_t) + data.size() + 1;
             }
 
-            void setSize(int32_t msg_len) {}
+            void allocateMemory(int32_t msg_len) 
+            {
+                data.reserve(msg_len);
+
+                _reserved_bytes = msg_len;
+            }
 
             static std::string getMsgType()
             {
@@ -53,7 +58,7 @@ namespace ros_msgs
             
             void deserialize(uint8_t* buffer)
             {
-                data.assign((char*)buffer);
+                data.assign((char*)buffer, _reserved_bytes);
             }
 
             bool operator==(std::string string_2) const
@@ -67,6 +72,9 @@ namespace ros_msgs
             }
 
             std::string data;
+
+        private:
+            int _reserved_bytes = 0;
 
     };
 
@@ -85,7 +93,7 @@ namespace ros_msgs
                 return _msg_size; 
             }
             
-            void setSize(int32_t msg_len) {}
+            void allocateMemory(int32_t msg_len) {}
 
             static std::string getMsgType()
             {
@@ -138,7 +146,7 @@ namespace ros_msgs
                 return _msg_size; 
             }
             
-            void setSize(int32_t msg_len) {}
+            void allocateMemory(int32_t msg_len) {}
 
             static std::string getMsgType()
             {
@@ -205,7 +213,7 @@ namespace ros_msgs
                 return _msg_size; 
             }
             
-            void setSize(int32_t msg_len) {}
+            void allocateMemory(int32_t msg_len) {}
 
             static std::string getMsgType()
             {
@@ -258,7 +266,7 @@ namespace ros_msgs
                 return _msg_size; 
             }
             
-            void setSize(int32_t msg_len) {}
+            void allocateMemory(int32_t msg_len) {}
 
             static std::string getMsgType()
             {
@@ -299,7 +307,7 @@ namespace ros_msgs
                 return _msg_size; 
             }
 
-            void setSize(int32_t msg_len) {}
+            void allocateMemory(int32_t msg_len) {}
 
             static std::string getMsgType()
             {
@@ -349,18 +357,27 @@ namespace ros_msgs
     {
         public:
             Trajectory() {}
+            ~Trajectory()
+            {
+                delete[] trajectory;
+            }
 
             size_t getSize() const 
             {
-                if(trajectory.empty() == true)
+                if(_trajectory_points == 0)
                     return 0;
 
-                return trajectory.size() * TrajectoryStateVector::getSize() + sizeof(int32_t);
+                return _trajectory_points * TrajectoryStateVector::getSize() + sizeof(int32_t);
             }
             
-            void setSize(int32_t msg_len) 
+            void allocateMemory(int32_t msg_len) 
             {
                 _trajectory_points = msg_len / TrajectoryStateVector::getSize();
+
+                if(trajectory != nullptr)
+                    delete trajectory;
+                
+                trajectory = new TrajectoryStateVector[_trajectory_points];
             }
 
             static std::string getMsgType()
@@ -370,11 +387,12 @@ namespace ros_msgs
 
             size_t getTrajectorySize() const
             {
-                return trajectory.size();
+                return _trajectory_points; 
             }
 
             void serialize(uint8_t* buffer) const
             {   
+                /*
                 if(trajectory.empty() == false)
                 {
                     *reinterpret_cast<int32_t*>(buffer) = trajectory.size() * TrajectoryStateVector::getSize();
@@ -387,10 +405,25 @@ namespace ros_msgs
                         buffer += TrajectoryStateVector::getSize();
                     }
                 }
+                */
+
+                if(_trajectory_points > 0)   
+                {
+                    *reinterpret_cast<int32_t*>(buffer) = _trajectory_points * TrajectoryStateVector::getSize();
+                    buffer += sizeof(int32_t);
+
+                    for(int i = 0; i < _trajectory_points; i++)
+                    {
+                        trajectory[i].serialize(buffer);
+
+                        buffer += TrajectoryStateVector::getSize();
+                    }
+                }
             }
 
             void deserialize(uint8_t* buffer)
             {
+                /*
                 trajectory.clear();
 
                 trajectory.reserve(_trajectory_points);
@@ -404,16 +437,23 @@ namespace ros_msgs
 
                     buffer += TrajectoryStateVector::getSize();
                 }
+                */
+
+               for(int i = 0; i < _trajectory_points; i++)
+               {
+                   trajectory[i].deserialize(buffer);
+
+                   buffer += TrajectoryStateVector::getSize();
+               }
             }
 
-            ros_msgs::TrajectoryStateVector operator[](int i) const
+            ros_msgs::TrajectoryStateVector& operator[](int i) const
             {
                 return trajectory[i];
             }
 
-            std::vector<TrajectoryStateVector> trajectory;
-
         private:
-            uint32_t _trajectory_points;
+            uint32_t _trajectory_points = 0;
+            ros_msgs::TrajectoryStateVector* trajectory = nullptr;
     };
 }

@@ -20,8 +20,6 @@ class dynInOutLinController : public PositionController
         bool destination_reached() override;
 
     private:
-        ros_msgs_lw::Pose2D _prev_pose;  
-        
         float _kp_1 = 0.3;
         float _kp_2 = 0.3;
         float _kd_1 = 0.6;

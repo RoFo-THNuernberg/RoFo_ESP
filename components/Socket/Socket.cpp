@@ -4,11 +4,13 @@
 
 #define TAG "Socket"
 
-Socket::Socket(int port, std::string ip_addr) : _port{port}, _ip_addr{ip_addr}
+Socket::Socket(int port, std::string ip_addr) : _socket_port{port}, _ip_addr{ip_addr}
 {
     _server_socket.sin_addr.s_addr = inet_addr(ip_addr.c_str());
     _server_socket.sin_family = AF_INET;
     _server_socket.sin_port = htons(port);
+
+    _send_mutx = xSemaphoreCreateMutex();
 
     connect_socket();
 }
@@ -16,6 +18,7 @@ Socket::Socket(int port, std::string ip_addr) : _port{port}, _ip_addr{ip_addr}
 Socket::~Socket()
 {
     disconnect_socket();
+    vSemaphoreDelete(_send_mutx);
 }
 
 void Socket::connect_socket()
@@ -28,24 +31,26 @@ void Socket::connect_socket()
 
         if(_connection_fd != -1)
         {
-            ESP_LOGI(TAG, "Socket created, connecting to %s:%d", _ip_addr.c_str(), _port);
+            ESP_LOGI(TAG, "Socket created, connecting to %s:%d", _ip_addr.c_str(), _socket_port);
 
             int err = connect(_connection_fd, (struct sockaddr*)&_server_socket, sizeof(struct sockaddr_in));
             if (!err) 
             {
-                ESP_LOGI(TAG, "Successfully connected to %d", _port);
+                ESP_LOGI(TAG, "Successfully connected to %d", _socket_port);
                 
                 int flags = fcntl(_connection_fd, F_GETFL);
                 fcntl(_connection_fd, F_SETFL, flags | O_NONBLOCK);
+
+                _send_failed = false;
                 
                 break;
             }
 
-            ESP_LOGE(TAG, "Socket (%d) unable to connect: errno %d", _port, errno);
+            ESP_LOGE(TAG, "Socket (%d) unable to connect: errno %d", _socket_port, errno);
             disconnect_socket();
         } 
         else 
-            ESP_LOGE(TAG, "Unable to create socket (%d): errno %d", _port, errno);
+            ESP_LOGE(TAG, "Unable to create socket (%d): errno %d", _socket_port, errno);
         
         vTaskDelay( i*500 / portTICK_PERIOD_MS);
         i = (i < 8) ? i+1 : 10;   
@@ -55,7 +60,7 @@ void Socket::connect_socket()
 void Socket::disconnect_socket() 
 {
     if (_connection_fd != -1) {
-        ESP_LOGE(TAG, "Shutting down socket (port: %d) and restarting...", _port);
+        ESP_LOGE(TAG, "Shutting down socket (port: %d) and restarting...", _socket_port);
         close(_connection_fd);
     }
 }
@@ -130,23 +135,37 @@ int Socket::socket_send(uint8_t const* tx_buffer, int buffer_len)
     int len = 0;
     int bytes_sent = 0;
 
-    while(bytes_sent < buffer_len)
+    if(xSemaphoreTake(_send_mutx, portMAX_DELAY) == pdPASS)
     {
-        len = send(_connection_fd, tx_buffer + bytes_sent, buffer_len - bytes_sent, 0);
-        
-        if(len == SOCKET_FAIL)
+
+        while(bytes_sent < buffer_len)
         {
-            if(errno == EWOULDBLOCK)
-                len = 0;
-            else
-                break;
+            len = send(_connection_fd, tx_buffer + bytes_sent, buffer_len - bytes_sent, 0);
+
+            if(len == SOCKET_FAIL)
+            {
+                if(errno == EWOULDBLOCK)
+                    len = 0;
+                else
+                {
+                    _send_failed = true;
+                    break;
+                }
+            }
+
+            bytes_sent += len;
+
+            if(bytes_sent < buffer_len)
+                vTaskDelay(1 / portMAX_DELAY);
         }
 
-        bytes_sent += len;
-
-        if(bytes_sent < buffer_len)
-            vTaskDelay(1 / portMAX_DELAY);
+        xSemaphoreGive(_send_mutx);
     }
 
     return len;
+}
+
+bool Socket::sendFailed()
+{
+    return _send_failed;
 }

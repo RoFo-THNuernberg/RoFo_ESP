@@ -34,14 +34,10 @@ class Socket
         void connect_socket();    
         void disconnect_socket();
 
-        bool sendFailed();
-
     private:
         Socket(const Socket&) = delete;
 
         int _connection_fd;
-
-        bool _send_failed = false;
 
         int const _socket_port;
         std::string _ip_addr;

@@ -112,12 +112,6 @@ namespace ros
 
         while(1)
         {      
-            if(node_handle->_sock.sendFailed() == true)
-            {
-                ESP_LOGE(TAG, "Sending failed!");
-                node_handle->_restart_protocol();
-            }
-
             node_handle->_send_keep_alive();   
 
             if(node_handle->_interpret_receive() == SOCKET_FAIL)

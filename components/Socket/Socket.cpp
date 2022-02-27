@@ -141,9 +141,7 @@ int Socket::socket_send(uint8_t const* tx_buffer, int buffer_len)
             len = send(_connection_fd, tx_buffer + bytes_sent, buffer_len - bytes_sent, 0);
 
             if(len == SOCKET_FAIL)
-            {
                 break;
-            }
 
             bytes_sent += len;
 

@@ -144,13 +144,8 @@ int Socket::socket_send(uint8_t const* tx_buffer, int buffer_len)
 
             if(len == SOCKET_FAIL)
             {
-                if(errno == EWOULDBLOCK)
-                    len = 0;
-                else
-                {
-                    _send_failed = true;
-                    break;
-                }
+                _send_failed = true;
+                break;
             }
 
             bytes_sent += len;

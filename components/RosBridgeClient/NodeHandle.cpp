@@ -34,12 +34,20 @@ namespace ros
         return *_node_handle_obj;
     }
 
+    void NodeHandle::registerConnectionLostCallback(std::function<void()> connection_lost_callback)
+    {
+        _connection_lost_callback.push_back(connection_lost_callback);
+    }
+
     void NodeHandle::_restart_protocol()
     {   
         ESP_LOGI(TAG, "Restarting Protocol!");
 
         for(ros::PublisherInterface* i : _publisher)
             i->block_publishing();
+
+        for(auto i : _connection_lost_callback)
+            i();
 
         _sock.disconnect_socket();
         vTaskDelay((2000 + MAX_KEEP_ALIVE_TIMOUT_MS)  / portTICK_PERIOD_MS);

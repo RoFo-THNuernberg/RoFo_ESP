@@ -23,6 +23,7 @@ namespace ros
     {
         public:
            static NodeHandle& init(std::string ros_namespace, Socket& sock);
+           void registerConnectionLostCallback(std::function<void()>);
 
             template <typename T> Publisher<T>& advertise(std::string const& topic);
             template <typename T> void subscribe(std::string const& topic, std::function<void(std::shared_ptr<T> ros_msg)> callback_function);
@@ -48,6 +49,8 @@ namespace ros
             std::string _ros_namespace;
             std::vector<Subscriber*> _subscriber;
             std::vector<PublisherInterface*> _publisher;
+
+            std::vector<std::function<void()>> _connection_lost_callback;
 
             TaskHandle_t _communication_handler_thread;
 

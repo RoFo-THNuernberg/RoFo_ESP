@@ -106,7 +106,6 @@ void ControllerMaster::_control_loop_task(void* pvParameters)
 
                 if(controller_obj._pos_controller->destination_reached() == true)
                 {   
-                    controller_obj.stop_controller(); 
                     controller_obj._destination_reached_callback();
                 }
             }

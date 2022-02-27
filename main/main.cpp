@@ -98,6 +98,8 @@ extern "C" void app_main(void)
   node_handle.subscribe<ros_msgs::Twist2D>("vel", std::bind(&StateMachine::set_velocity, &state_machine, std::placeholders::_1));
   node_handle.subscribe<ros_msgs::Trajectory>("trajectory", std::bind(&StateMachine::set_trajectory, &state_machine, std::placeholders::_1));
 
+  node_handle.registerConnectionLostCallback(std::bind(&StateMachine::stop, &state_machine));
+
   LedStrip& led_strip = LedStrip::init();
   node_handle.subscribe<ros_msgs::String>("led", std::bind(&LedStrip::animation_callback, &led_strip, std::placeholders::_1));
 

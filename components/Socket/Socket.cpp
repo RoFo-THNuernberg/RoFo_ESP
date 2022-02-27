@@ -41,8 +41,6 @@ void Socket::connect_socket()
                 int flags = fcntl(_connection_fd, F_GETFL);
                 fcntl(_connection_fd, F_SETFL, flags | O_NONBLOCK);
 
-                _send_failed = false;
-                
                 break;
             }
 
@@ -143,15 +141,7 @@ int Socket::socket_send(uint8_t const* tx_buffer, int buffer_len)
             len = send(_connection_fd, tx_buffer + bytes_sent, buffer_len - bytes_sent, 0);
 
             if(len == SOCKET_FAIL)
-            {
-                if(errno == EWOULDBLOCK)
-                    len = 0;
-                else
-                {
-                    _send_failed = true;
-                    break;
-                }
-            }
+                break;
 
             bytes_sent += len;
 
@@ -163,9 +153,4 @@ int Socket::socket_send(uint8_t const* tx_buffer, int buffer_len)
     }
 
     return len;
-}
-
-bool Socket::sendFailed()
-{
-    return _send_failed;
 }

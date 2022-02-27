@@ -6,6 +6,14 @@ ros_msgs_lw::Twist2D statInOutLinController::update(ros_msgs_lw::Pose2D const& a
 {   
     ros_msgs_lw::Twist2D output_vel;
 
+    uint64_t current_time_us = esp_timer_get_time();
+
+    while(_trajectory_cntr + 1 < _trajectory->getTrajectorySize() &&
+        (*_trajectory)[_trajectory_cntr + 1].timestamp / 1000 - _state_vector_time_difference_us < current_time_us)
+    {
+        _trajectory_cntr++;
+    }
+
     if(_trajectory_cntr < _trajectory->getTrajectorySize())
     {
         ros_msgs::TrajectoryStateVector const&  setpoint_vector = (*_trajectory)[_trajectory_cntr];

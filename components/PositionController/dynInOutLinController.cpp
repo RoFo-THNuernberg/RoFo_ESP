@@ -11,16 +11,24 @@ dynInOutLinController::dynInOutLinController(std::shared_ptr<ros_msgs::Trajector
     _prev_time_us{(uint64_t)esp_timer_get_time()},  _trajectory{trajectory} 
 {
     _prev_velocity = sqrt(pow((*_trajectory)[0].dx, 2) + pow((*_trajectory)[0].dy, 2));
+    _state_vector_time_difference_us = (*_trajectory)[0].timestamp /1000 - esp_timer_get_time();
 }
 
 ros_msgs_lw::Twist2D dynInOutLinController::update(ros_msgs_lw::Pose2D const& actual_pose)
 {   
     ros_msgs_lw::Twist2D output_vel;
 
+    uint64_t current_time_us = esp_timer_get_time();
+
+    while(_trajectory_cntr + 1 < _trajectory->getTrajectorySize() &&
+        (*_trajectory)[_trajectory_cntr + 1].timestamp / 1000 - _state_vector_time_difference_us < current_time_us)
+    {
+        _trajectory_cntr++;
+    }
+
     if(_trajectory_cntr < _trajectory->getTrajectorySize())
     {
         /*calculate time since last excecution*/
-        uint64_t current_time_us = esp_timer_get_time();
         uint64_t delta_time_us = current_time_us - _prev_time_us;
         _prev_time_us = current_time_us;
 

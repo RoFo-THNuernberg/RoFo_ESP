@@ -3,6 +3,7 @@
 #include "PositionController.h"
 #include "RosMsgsLw.h"
 #include "RosMsgs.h"
+#include "esp_timer.h"
 
 #include "math.h"
 
@@ -25,6 +26,8 @@ class approxLinController : public PositionController
 
         std::shared_ptr<ros_msgs::Trajectory> _trajectory;
         uint32_t _trajectory_cntr = 0;
+
+        int64_t _state_vector_time_difference_us;
 
         bool _destination_reached = false;
 };

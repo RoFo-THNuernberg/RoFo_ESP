@@ -82,6 +82,7 @@ void DriveToPoint::set_goal_point(StateMachine& state_machine, std::shared_ptr<r
 
 void DriveToPoint::stop(StateMachine& state_machine)
 {
+    state_machine.controller_master.stop_controller();
     state_machine.setState(new Idle);
 }
 
@@ -108,5 +109,6 @@ void FollowTrajectory::set_trajectory(StateMachine& state_machine, std::shared_p
 
 void FollowTrajectory::stop(StateMachine& state_machine)
 {
+    state_machine.controller_master.stop_controller();
     state_machine.setState(new Idle);
 }

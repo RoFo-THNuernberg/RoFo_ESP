@@ -32,5 +32,7 @@ class dynInOutLinController : public PositionController
         std::shared_ptr<ros_msgs::Trajectory> _trajectory;
         uint32_t _trajectory_cntr = 0;
 
+        int64_t _state_vector_time_difference_us;
+
         bool _destination_reached = false;
 };

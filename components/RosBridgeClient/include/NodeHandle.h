@@ -38,7 +38,6 @@ namespace ros
             int _interpret_receive();
 
             static void _communication_handler(void* arg);
-            static void _check_keep_alive(void *arg);
 
             Subscriber* _getSubscriber(std::string const& topic);
             void _unsubscribe();
@@ -50,12 +49,7 @@ namespace ros
             std::vector<Subscriber*> _subscriber;
             std::vector<PublisherInterface*> _publisher;
 
-            static TaskHandle_t _communication_handler_thread;
-            static TaskHandle_t _check_keep_alive_thread;
-
-            static SemaphoreHandle_t _restart_mutx;
-
-            bool _protocol_restarting = false;
+            TaskHandle_t _communication_handler_thread;
 
             uint64_t _server_time_difference_us;
             uint64_t _keep_alive_time_us;

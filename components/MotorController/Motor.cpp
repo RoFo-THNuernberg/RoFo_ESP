@@ -24,8 +24,6 @@ Motor::Motor(mcpwm_unit_t mcpwm_unit, mcpwm_pin_config_t motor_pins, bool motor_
     _mcpwm_capture_config_0 = (mcpwm_capture_config_t) {.cap_edge = MCPWM_POS_EDGE, .cap_prescale = 1, .capture_cb = _encoder_callback, .user_data = this};
     _mcpwm_capture_config_1 = (mcpwm_capture_config_t) {.cap_edge = MCPWM_BOTH_EDGE, .cap_prescale = 1, .capture_cb = NULL, .user_data = NULL};
 
-    _kp = 50;
-    _ki = 500.0;
     _prev_time_us = esp_timer_get_time();
 
     ESP_ERROR_CHECK(mcpwm_set_pin(_mcpwm_unit, &_motor_pins));

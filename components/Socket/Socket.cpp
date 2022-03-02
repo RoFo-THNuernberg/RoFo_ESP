@@ -86,11 +86,11 @@ int Socket::socket_receive(uint8_t* rx_buffer, int recv_bytes)
 }
 
 
-int Socket::socket_receive_string(std::string& new_string, int max_bytes)
+int Socket::socket_receive_string(std::string& rx_string, int max_bytes)
 {
     int bytes_read = 0;
     int len = 0;
-    char rx_buffer[max_bytes];
+    char* rx_buffer = new char[max_bytes];
 
     while(bytes_read < max_bytes)
     {   
@@ -110,7 +110,7 @@ int Socket::socket_receive_string(std::string& new_string, int max_bytes)
     }
 
     if(len != SOCKET_FAIL)
-        new_string.assign(rx_buffer);
+        rx_string.assign(rx_buffer);
     else
         bytes_read = SOCKET_FAIL;
     

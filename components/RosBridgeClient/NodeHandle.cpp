@@ -9,7 +9,7 @@ namespace ros
     NodeHandle* NodeHandle::_node_handle_obj = nullptr;
 
 
-    NodeHandle::NodeHandle(std::string ros_namespace, Socket& sock) : _sock{sock}, _ros_namespace{ros_namespace}
+    NodeHandle::NodeHandle(std::string const& ros_namespace, Socket& sock) : _sock{sock}, _ros_namespace{ros_namespace}
     {   
         _keep_alive_time_us = esp_timer_get_time();
         _last_send_keep_alive_us = esp_timer_get_time();
@@ -23,10 +23,15 @@ namespace ros
     {   
         vTaskDelete(_communication_handler_thread);
 
-        _unsubscribe();
+
+        for(auto i : _subscriber)
+            delete i;
+
+        for(auto i : _publisher)
+            delete i;
     }
 
-    NodeHandle& NodeHandle::init(std::string ros_namespace, Socket& sock)
+    NodeHandle& NodeHandle::init(std::string const& ros_namespace, Socket& sock)
     {
         if(_node_handle_obj == nullptr)
             _node_handle_obj = new NodeHandle(ros_namespace, sock);
@@ -218,11 +223,5 @@ namespace ros
         }
 
         return nullptr;
-    }
-
-    void NodeHandle::_unsubscribe()
-    {
-        for(auto i : _subscriber)
-            delete i;
     }
 }

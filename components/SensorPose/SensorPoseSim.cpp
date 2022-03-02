@@ -4,14 +4,17 @@ SensorPoseSim* SensorPoseSim::_sensor_pose_sim = nullptr;
 
 SensorPoseSim::SensorPoseSim(ros::NodeHandle& node_handle) : _measurement_noise_cov(3, 3)  //constructor of dspm::Mat sets noise covariance to 0
 {
-    SensorPoseSim::_current_pose_queue = xQueueCreate(1, sizeof(ros_msgs_lw::Pose2D));
+    _current_pose_queue = xQueueCreate(1, sizeof(ros_msgs_lw::Pose2D));
+    _peek_at_pose_queue = xQueueCreate(1, sizeof(ros_msgs_lw::Pose2D));
+
 
     node_handle.subscribe<ros_msgs::Pose2DSim>("pose", std::bind(&SensorPoseSim::_setPose, this, std::placeholders::_1));
 }
 
 SensorPoseSim::~SensorPoseSim()
 {
-    vQueueDelete(SensorPoseSim::_current_pose_queue);
+    vQueueDelete(_current_pose_queue);
+    vQueueDelete(_peek_at_pose_queue);
 }
 
 SensorPoseSim& SensorPoseSim::init(ros::NodeHandle& node_handle)
@@ -32,7 +35,7 @@ bool SensorPoseSim::getPose(ros_msgs_lw::Pose2D& current_pose) const
 
 bool SensorPoseSim::peekAtPose(ros_msgs_lw::Pose2D& current_pose) const
 {
-    if(xQueuePeek(_current_pose_queue, &current_pose, 0) == pdPASS)
+    if(xQueuePeek(_peek_at_pose_queue, &current_pose, 0) == pdPASS)
         return true;
 
     return false;
@@ -64,7 +67,7 @@ bool SensorPoseSim::calculateKalman(ros_msgs_lw::Pose2D const& a_priori_estimate
 
 bool SensorPoseSim::getAbsolutePose(ros_msgs_lw::Pose2D& initial_pose) const
 {
-    if(xQueueReceive(SensorPoseSim::_current_pose_queue, &initial_pose, 0) == pdPASS)
+    if(xQueueReceive(_current_pose_queue, &initial_pose, 0) == pdPASS)
         return true;
 
     return false;

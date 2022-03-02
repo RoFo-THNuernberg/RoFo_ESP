@@ -17,7 +17,9 @@
 #include "esp_err.h"
 
 /**
- * @brief This class manages the Position Controller. It provides a timer triggered task which updates the Position Controller, checks if the destination was reached and then calls the provided callback_function.
+ * @brief This class manages the Position Controller. 
+ * It provides a timer triggered task which updates the Position Controller, 
+ * checks if the destination was reached and then calls the provided callback_function.
  */
 class ControllerMaster
 {
@@ -28,21 +30,24 @@ class ControllerMaster
          * 
          * @note It is safe to call this function multiple times. It will only create one instance.
          * 
+         * param [in] output_velocity reference to the OutputVelocity object
+         * param [in] sensor_pose reference to the SensorPose object
          * @return Reference to the ControllerMaster instance
          */  
         static ControllerMaster& init(OutputVelocity& output_velocity, SensorPose& sensor_pose);
 
         /**
          * @brief This function starts the navigation. The navigation type (drive to point or trajectory tracking) is dependent on the provided PositonController object.
-         * If a previous navigation gets interrupted by a new call to start_controller(), the old PositionController object is deleted/replaced by the new PosController and the new navigation is started.  
+         * If a previous navigation gets interrupted by a new call to start_controller(), 
+         * the old PositionController object is deleted/replaced by the new PositonController and the new navigation is started.  
          * 
-         * @param pos_controller Pointer to a PositionController object. The referenced object must be allocated on the heap. Deletion gets also handled by the ControllerMaster.
-         * @param destination_reached_callback Callback function gets called when the PositionController reaches its goal. 
+         * @param [in] pos_controller Pointer to a PositionController object. The referenced object must be allocated on the heap. Deletion is handled by the ControllerMaster.
+         * @param [in] destination_reached_callback Callback function is called when the PositionController reaches its goal. 
          */ 
         void start_controller(PositionController* pos_controller, std::function<void()>destination_reached_callback);
         
         /**
-         * @brief This function stops the navigation. Since the ControllerMaster wont stop the PositionController automatically if the destination has been reached, it makes sense to call stop_controller() in the _destination_reached_callback function
+         * @brief This function stops the navigation.
          */ 
         void stop_controller();
 

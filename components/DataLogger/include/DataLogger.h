@@ -17,9 +17,11 @@
 
 /**
  * @brief Class for logging string data to ROS.
+ * Logging is started by a call to startLogging(). 
  * The logs are accumulated to large String blocks and then published to ROS.
+ * Logging automatically stops after the provided log_time
  * 
- * @note check the Data Logger section in idf.py menuconfig to configure the behaviour
+ * @note Check the Data Logger section in idf.py menuconfig to configure the behaviour
  */
 class DataLogger
 {
@@ -37,7 +39,7 @@ class DataLogger
          * 
          * @note This method is intended as a callback function for the RosBridgeClient Subscriber
          * 
-         * @param [in] log_time floating point time in seconds
+         * @param [in] log_time String encoded floating point time in seconds
          */
         void startLogging(std::shared_ptr<ros_msgs::String> log_time);
 
@@ -46,7 +48,7 @@ class DataLogger
          * 
          * @note It is recommended to use the macro LOG_DATA()
          * 
-         * @param [in] format C format string
+         * @param [in] format printf() style format string
          * @param [in] ... additional arguments depending on the format string
          */
         void logData(const char* format, ...);
@@ -58,22 +60,24 @@ class DataLogger
         DataLogger(DataLogger const&) = delete;
         ~DataLogger();
         
-        ///task for publishing data
+        /**
+         * @brief This task empties the buffer queue by publishing to ROS.
+         * It is only active during logging.
+         * 
+         * @param [in] pvParameters pointer to the DataLogger object
+         */
         static void _data_logger_task(void* pvParameters);
 
         ros::Publisher<ros_msgs::String>& _publisher;
 
-        ///log until the specified time
         uint64_t _data_logging_end_us = 0;
 
-        ///accumulate data before adding it to the queue
         char* _log_buffer;
         int _log_buffer_cntr = 0;
 
-        ///queue contains char pointers to the data blocks
         QueueHandle_t _log_buffer_queue;
 
-        ///semaphore for controlling when to add new data in the logData() method
+        ///semaphore controls when to add new data in the logData() method
         SemaphoreHandle_t _data_logging_semphr;
 
         TaskHandle_t _data_logger_task_handle;
@@ -88,7 +92,7 @@ class DataLogger
  * 
  * @note DATA_LOGGING must be defined before including DataLogger.h to enable logging
  * 
- * @param [in] format C format string
+ * @param [in] format printf() style format string
  * @param [in] ... additional arguments depending on the format string
 */
 #ifdef DATA_LOGGING

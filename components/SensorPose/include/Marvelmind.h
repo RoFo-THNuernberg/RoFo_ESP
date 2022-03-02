@@ -13,11 +13,24 @@
 #include "KalmanSensor.h"
 #include "mat.h"
 
+
+/**
+ * The Marvelmind class drives the UART communication with the Marvelmind RX Beacon.
+ * It can be used as a standalone SensorPose or as a source for the KalmanFilter.
+ */
 class Marvelmind : public KalmanSensor, public SensorPose
 {
     public:
+        /**
+         * @brief Initialize the Marvelmind instance
+         * 
+         * @note It is safe to call this function multiple times. It will only create one instance.
+         * 
+         * @return Reference to the Marvelmind instance
+         */ 
         static Marvelmind& init();
 
+        
         bool peekAtPose(ros_msgs_lw::Pose2D& current_pose) const override; 
         bool getPose(ros_msgs_lw::Pose2D& current_pose) const override;
         void reInit() override {}
@@ -37,6 +50,7 @@ class Marvelmind : public KalmanSensor, public SensorPose
         static Marvelmind* _marvelmind_sensor;
 
         QueueHandle_t _current_pose_queue;
+        QueueHandle_t _peek_at_pose_queue;
 
         dspm::Mat _measurement_noise_cov;
 

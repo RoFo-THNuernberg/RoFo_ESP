@@ -12,11 +12,25 @@
 #include "KalmanSensor.h"
 #include "NodeHandle.h"
 
+
+/**
+ * @brief This class obtains measurements by subscribing to the topic "/pose" in the ROS system.
+ * It can be used to simulate the robot with e.g. Turtlesim.
+ * Eventough the measurement covariance is zero, this class also implements the KalmanSensor to boost the
+ * measurement rate to 100Hz while simulating
+ */
 class SensorPoseSim : public SensorPose, public KalmanSensor
 {
-    public:
+    public: 
+        /**
+         * @brief Initialize the SensorPoseSim instance
+         * 
+         * @note It is safe to call this function multiple times. It will only create one instance.
+         * 
+         * @param [in] node_handle reference to the node_handle object
+         * @return Reference to the SensorPoseSim instance
+         */
         static SensorPoseSim& init(ros::NodeHandle& node_handle);
-
         
         bool peekAtPose(ros_msgs_lw::Pose2D& current_pose) const override;
         bool getPose(ros_msgs_lw::Pose2D& current_pose) const override;
@@ -32,7 +46,8 @@ class SensorPoseSim : public SensorPose, public KalmanSensor
         SensorPoseSim(SensorPoseSim const&) = delete;
         ~SensorPoseSim();
 
-        xQueueHandle _current_pose_queue;
+        QueueHandle_t _current_pose_queue;
+        QueueHandle_t _peek_at_pose_queue;
 
         dspm::Mat _measurement_noise_cov;
 

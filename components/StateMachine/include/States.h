@@ -11,6 +11,11 @@
 
 class StateMachine;
 
+/**
+ * @brief State interface for State pattern design.
+ * The behaviour of the StateMachine can be altered 
+ * by changing the implementation in the different handler functions.
+ */
 class State
 {
     public:

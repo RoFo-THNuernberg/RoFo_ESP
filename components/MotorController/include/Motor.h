@@ -7,7 +7,9 @@
 #include "soc/rtc.h"
 
 /**
- * @brief This class controls Motor_A and Motor_B. It provides a callback function for the MCPWM capture component, it calculates actual motor speed, it controls the motor duty cycle and it provides a PI controller. 
+ * @brief This class controls Motor_A and Motor_B. 
+ * It provides a callback function for the MCPWM capture component for measuring acutal motor speed, 
+ * it sets the motor duty cycle and it provides a PI controller for controlling the motor speed. 
  */
 class Motor
 {
@@ -16,9 +18,9 @@ class Motor
         static Motor& init_b();
 
         /**
-         * @brief Set the target angular velocity for the motor in RAD/s
+         * @brief Set the target angular velocity for the motor PI controller in RAD/s
          * 
-         * @param setpoint_velocity Target angular velocity
+         * @param [in] setpoint_velocity Target angular velocity RAD/s
          */
         void setSetpointVelocity(float setpoint_velocity);
         
@@ -39,9 +41,9 @@ class Motor
         /**
          * @brief Calculate PI controller output for the next time step 
          * 
-         * @note This function must be called periodically
+         * @note This function must be called periodically.
          * 
-         * @param actual_velocity current velocity of the motor
+         * @param [in] actual_velocity current velocity of the motor
          * 
          * @return ouput duty cycle
          */
@@ -50,7 +52,7 @@ class Motor
         /**
          * @brief Set output duty cycle for the motor
          * 
-         * @param duty_cycle Output duty cycle (Accepted range: -100 - +100)  
+         * @param [in] duty_cycle Output duty cycle (Accepted range: -100 - +100)  
          */
         void setDuty(float duty_cycle);
 
@@ -61,17 +63,19 @@ class Motor
         
         /**
          * @brief Callback function for the Espressife IDF MCPWM Capture Module 
+         * Calculates the time difference (_encoder_pulse_period) between two positive edges on CAP_0. The sign is obtained by checking if the last edge on CAP_1 was positive or negative. 
          * 
-         * @note Calculates the time difference (_encoder_pulse_period) between two positive edges on CAP_0. The sign is obtained by checking if the last edge on CAP_1 was positive or negative.   
+         * @note Check ESP-IDF Programming Guide for a description of the parameters
          */
         static bool IRAM_ATTR _encoder_callback(mcpwm_unit_t mcpwm_unit, mcpwm_capture_channel_id_t cap_channel, const cap_event_data_t *edata, void *user_data);
 
         static Motor* _motor_a;
         static Motor* _motor_b;
 
-        float _kp, _ki;
+        float _kp = 50.0;
+        float _ki = 500.0;
 
-        /** Invert mapping between motor direction and sign of duty cycle **/
+        /// Invert mapping between actual motor direction and sign of duty cycle
         bool _motor_dir;
 
         float _setpoint_velocity = 0;
@@ -80,7 +84,6 @@ class Motor
         float _error_integral = 0;
 
         uint32_t _encoder_timestamp;
-
         int32_t _encoder_pulse_period;
         int32_t _prev_pulse_period;
 

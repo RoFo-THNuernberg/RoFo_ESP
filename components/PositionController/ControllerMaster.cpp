@@ -92,10 +92,9 @@ void ControllerMaster::_control_loop_task(void* pvParameters)
             //Input
             ros_msgs_lw::Pose2D actual_pose;
             if(controller_obj._sensor_pose.getPose(actual_pose) == true)
-            {  
+            {
 
                 uint64_t time = esp_timer_get_time();
-                //ESP_LOGI("timer", "delta: %lld", time - controller_obj.prev_time);
                 controller_obj.prev_time = time;
 
                 //process position controller
@@ -106,12 +105,12 @@ void ControllerMaster::_control_loop_task(void* pvParameters)
 
                 if(controller_obj._pos_controller->destination_reached() == true)
                 {   
+                    controller_obj._controller_is_stopped = true;
                     controller_obj._destination_reached_callback();
                 }
             }
                 
             xSemaphoreGive(controller_obj._pos_controller_mutx);
         }
-
     }
 }

@@ -12,36 +12,58 @@
 
 namespace ros
 {  
-
+    /**
+     * @brief Interface for storing SubscriberImpl of different message types in std::vector
+     */
     class Subscriber
     {
         public:
             virtual ~Subscriber() {}
-
             virtual bool recvMessage() = 0;
             virtual bool compareTopic(std::string const& topic) = 0;
             virtual void subscribe();
 
     };
 
+    /**
+     * @brief The SubscriberImpl is used to receive RosMsgs from the TCP socket 
+     * and executing the corresponding callback_function
+     */
     template <typename T> class SubscriberImpl : public Subscriber
     {
         public:
-            SubscriberImpl(std::string const& topic, Socket& sock, std::function<void(std::shared_ptr<T> ros_msg)> callback_function) : 
-                _topic{topic}, _sock{sock}, _callback_function{callback_function} {}
-            ~SubscriberImpl() {}
-
-            bool recvMessage() override;
-            bool compareTopic(std::string const& topic) override;
-
-            void subscribe() override;
-
             
         private:
+            friend class NodeHandle;
+
+            explicit SubscriberImpl(std::string const& topic, Socket& sock, std::function<void(std::shared_ptr<T> ros_msg)> callback_function) : 
+                _topic{topic}, _sock{sock}, _callback_function{callback_function} {}
+            explicit SubscriberImpl(SubscriberImpl const&) = delete;
+            ~SubscriberImpl() {}
+
+            /**
+             * @brief Receives data from the TCP Socket, deserializes it to a RosMsg 
+             * and calls the corresponding callback_funciton.
+             */
+            bool recvMessage() override;
+
+            /**
+             * @brief Method to check if the Subscriber listens to the topic.
+             * 
+             * @param [in] topic topic name
+             * @return true if topic equals internal topic else false
+             */
+            bool compareTopic(std::string const& topic) override;
+
+            /**
+             * The subscribe() method sends the topic name with the message type to the
+             * ROS Robot Server as a Subscribe message.
+             */
+            void subscribe() override;
+
             std::string const _topic;
             Socket& _sock;
             std::function<void(std::shared_ptr<T> ros_msg)> _callback_function;
-
     };
 
 

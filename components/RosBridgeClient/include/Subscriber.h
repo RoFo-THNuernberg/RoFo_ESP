@@ -43,15 +43,15 @@ namespace ros
 
             /**
              * @brief Receives data from the TCP Socket, deserializes it to a RosMsg 
-             * and calls the corresponding callback_funciton.
+             * and calls the corresponding callback_function.
              */
             bool recvMessage() override;
 
             /**
-             * @brief Method to check if the Subscriber listens to the topic.
+             * @brief Method to check if the Subscriber listens to the provided topic.
              * 
              * @param [in] topic topic name
-             * @return true if topic equals internal topic else false
+             * @return true if topic equals internal topic, else false
              */
             bool compareTopic(std::string const& topic) override;
 

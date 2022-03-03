@@ -36,10 +36,10 @@ class Socket
          * or another task is currently executing this method.
          * 
          * @param [in] tx_buffer 
-         * @param [in] send_bytes
+         * @param [in] buffer_len
          * @return the amount of bytes sent if succesfull, SOCKET_FAIL if internal send() fails
          */
-        int socket_send(uint8_t const* tx_buffer, int send_bytes);
+        int socket_send(uint8_t const* tx_buffer, int buffer_len);
 
         /**
          * @brief Receive data from the server.
@@ -52,7 +52,7 @@ class Socket
         int socket_receive(uint8_t* rx_buffer, int recv_bytes);
 
         /**
-         * @brief Receiv data from the server
+         * @brief Receive data from the server.
          * This method will not block.
          * 
          * @param [out] rx_buffer

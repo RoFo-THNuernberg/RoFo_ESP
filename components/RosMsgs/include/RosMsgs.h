@@ -26,6 +26,8 @@ namespace ros_msgs_lw
  * the getSize() method will always return the accumulated size of its members.
  * The Array type message uses the allocateMemory() method to allocate the required memory for the deserialization and
  * the getSize() method returns zero if the array is empty or array length in bytes + 4 bytes (for the serialization of array length).
+ * 
+ * @note Publishing empty Array messages is not supported and will break the protocol!!!
  */
 namespace ros_msgs
 {

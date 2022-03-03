@@ -25,7 +25,7 @@
 #define DATA_LOGGING
 #include "DataLogger.h"
 
-#define USE_SIM
+//#define USE_SIM
 #define KALMAN
 //#define STEP_RESPONSE
 

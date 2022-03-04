@@ -2,9 +2,7 @@
 
 #include "esp_log.h"
 
-
-static const char *TAG = "ws2815";
-
+#define TAG "LedStrip"
 
 
 #define WS2815_T0H_NS (350)
@@ -111,10 +109,6 @@ LedStrip::LedStrip()
     xTaskCreate(led_handler, "led_handler", 2048, this, 2, &led_handler_thread);
 
     xMessageBuffer = xMessageBufferCreate(xMessageBufferSizeBytes);
-    if(xMessageBuffer == NULL)
-        ESP_LOGE(LEDTAG, "There was not enough heap memory space available to create the message buffer.");
-    else
-        ESP_LOGI(LEDTAG, "The message buffer was created successfully and can now be used.");
 }
 
 LedStrip::~LedStrip()
@@ -247,9 +241,6 @@ void LedStrip::animation_rainbow()
 
 void LedStrip::animation_line()
 {
-
-    hsv2rgb(hue, 100, 50, &red, &green, &blue);
-
     memset(buffer, 0 , max_leds * 3);
 
     set_pixel(prev_index, 0, 0, 0);
@@ -300,9 +291,6 @@ void LedStrip::animation_pulse()
 
 void LedStrip::animation_circle()
 {
-   
-    hsv2rgb(hue, 100, 50, &red, &green, &blue);
-
     memset(buffer, 0 , max_leds * 3);
 
     if(counter_circle == 0)
@@ -368,7 +356,6 @@ void LedStrip::animation_circle()
 
 void LedStrip::animation_specific()
 {
-
     for(int i = 0; i < max_leds; i++)
     {
         set_pixel(i, red, green, blue);
@@ -383,36 +370,44 @@ void LedStrip::led_handler(void *arg)
     LedStrip &ledStrip = *reinterpret_cast<LedStrip*>(arg);
 
     char* received_message = new char[ledStrip.xMessageBufferSizeBytes];
-    char* animation;
+    char* animation = nullptr;
     char *red;
     char *green;
     char *blue;
 
     while(1)
     {
-    size_t xReceivedBytes = xMessageBufferReceive( ledStrip.xMessageBuffer, received_message, ledStrip.xMessageBufferSizeBytes, 0);
+        size_t xReceivedBytes = 0;
+        if((xReceivedBytes = xMessageBufferReceive( ledStrip.xMessageBuffer, received_message, ledStrip.xMessageBufferSizeBytes, 0)) > 0)
+        {
+            
+            //Getting Animation and RGB values
+            animation = strtok(received_message, ",");
+            red = strtok(NULL, ",");
+            green = strtok(NULL, ",");
+            blue = strtok(NULL, ",");
 
-    //Getting Animation and RGB values
-    animation = strtok(received_message, ",");
-    red = strtok(NULL, ",");
-    green = strtok(NULL, ",");
-    blue = strtok(NULL, ",");
+            ledStrip.red = strtoul(red, NULL, 0);
+            ledStrip.green = strtoul(green, NULL, 0);
+            ledStrip.blue = strtoul(blue, NULL, 0);
 
-    ledStrip.red = strtoul(red, NULL, 0);
-    ledStrip.green = strtoul(green, NULL, 0);
-    ledStrip.blue = strtoul(blue, NULL, 0);
+            ESP_LOGI(TAG, "Received: %s; red: %d, green: %d, blue: %d", animation, ledStrip.red, ledStrip.green, ledStrip.blue);
+        }
 
-    if(strncmp(animation ,"rainbow",xReceivedBytes))
-        ledStrip.animation_rainbow();
-    else if(strncmp(animation ,"pulse",xReceivedBytes))
-        ledStrip.animation_pulse();
-    else if(strncmp(animation ,"line",xReceivedBytes))
-        ledStrip.animation_line();
-    else if(strncmp(animation ,"circle",xReceivedBytes))
-        ledStrip.animation_circle();
-    else if(strncmp(animation ,"specific",xReceivedBytes))
-        ledStrip.animation_specific();
-        
-    vTaskDelay(1);
+        if(animation != nullptr)
+        {
+            if(!strcmp(animation ,"rainbow"))
+                ledStrip.animation_rainbow();
+            else if(!strcmp(animation ,"pulse"))
+                ledStrip.animation_pulse();
+            else if(!strcmp(animation ,"line"))
+                ledStrip.animation_line();
+            else if(!strcmp(animation ,"circle"))
+                ledStrip.animation_circle();
+            else if(!strcmp(animation ,"specific"))
+                ledStrip.animation_specific();
+        }
+
+        vTaskDelay(10);
     }
 }

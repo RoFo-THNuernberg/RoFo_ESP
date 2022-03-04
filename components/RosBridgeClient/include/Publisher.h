@@ -79,7 +79,7 @@ namespace ros
     
     template <typename T> void Publisher<T>::publish(T const& msg)
     {   
-        if(xSemaphoreTake(_block_publishing_semphr, 0) == pdPASS)
+        if(xSemaphoreTake(_block_publishing_semphr, 0) == pdPASS && msg.getSize() != 0)
         { 
             uint8_t* pkt_buffer = new uint8_t[_topic.size() + msg.getSize() +  2];
 

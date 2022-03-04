@@ -41,6 +41,8 @@ void Socket::connect_socket()
                 int flags = fcntl(_connection_fd, F_GETFL);
                 fcntl(_connection_fd, F_SETFL, flags | O_NONBLOCK);
 
+                xSemaphoreGive(_send_mutx);
+
                 break;
             }
 
@@ -58,8 +60,11 @@ void Socket::connect_socket()
 void Socket::disconnect_socket() 
 {
     if (_connection_fd != -1) {
-        ESP_LOGE(TAG, "Shutting down socket (port: %d) and restarting...", _socket_port);
-        close(_connection_fd);
+        if(xSemaphoreTake(_send_mutx, portMAX_DELAY) == pdPASS)
+        {
+            ESP_LOGE(TAG, "Shutting down socket (port: %d) and restarting...", _socket_port);
+            close(_connection_fd);
+        }
     }
 }
 
@@ -96,10 +101,10 @@ int Socket::socket_receive_string(std::string& rx_string, int max_bytes)
     {   
         do
         {
-            len = recv(_connection_fd, rx_buffer + bytes_read, 1, 0);
-
-            if(len == SOCKET_FAIL && errno == EWOULDBLOCK)
+            if(len == SOCKET_FAIL)
                 vTaskDelay(1 / portTICK_PERIOD_MS);
+
+            len = recv(_connection_fd, rx_buffer + bytes_read, 1, 0);
         } 
         while(len == SOCKET_FAIL && errno == EWOULDBLOCK);
 
@@ -135,13 +140,17 @@ int Socket::socket_send(uint8_t const* tx_buffer, int buffer_len)
 
     if(xSemaphoreTake(_send_mutx, portMAX_DELAY) == pdPASS)
     {
-
         while(bytes_sent < buffer_len)
         {
             len = send(_connection_fd, tx_buffer + bytes_sent, buffer_len - bytes_sent, 0);
 
-            if(len == SOCKET_FAIL)
+            if(len == SOCKET_FAIL && errno == EWOULDBLOCK)
+                len = 0;
+            else if(len == SOCKET_FAIL)
+            {
+                bytes_sent = SOCKET_FAIL;
                 break;
+            } 
 
             bytes_sent += len;
 
@@ -152,5 +161,5 @@ int Socket::socket_send(uint8_t const* tx_buffer, int buffer_len)
         xSemaphoreGive(_send_mutx);
     }
 
-    return len;
+    return bytes_sent;
 }

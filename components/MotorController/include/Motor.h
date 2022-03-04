@@ -72,8 +72,8 @@ class Motor
         static Motor* _motor_a;
         static Motor* _motor_b;
 
-        float _kp = 50.0;
-        float _ki = 500.0;
+        float _kp = 50.0;  //20
+        float _ki = 500.0;  //500
 
         /// Invert mapping between actual motor direction and sign of duty cycle
         bool _motor_dir;

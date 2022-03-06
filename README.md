@@ -11,7 +11,7 @@ __Roboterformation__ is a student project aiming to create a system of multiple 
 * Run the export script on Windows (export.bat) or source it on Unix (source export.sh) in every shell environment before using ESP-IDF.
 * Set the project target to `esp32` with `idf.py set-target esp32`
 * run `idf.py menuconfig` to start the configuarion menu
-    - got to *Serial flasher config* and set *Flash size* to 8MB
+    - go to *Serial flasher config* and set *Flash size* to 8MB
     - go to  *Component config -> ESP32-specific* and enable the option *Support for external, SPI-connected RAM*
     - go to *Wifi Configuration* and enter your Wifi-SSID and Password
     - go to *Socket Configuration* and enter the IP Address of the Ros Robot Bridge Server

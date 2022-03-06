@@ -24,8 +24,6 @@ Motor::Motor(mcpwm_unit_t mcpwm_unit, mcpwm_pin_config_t motor_pins, bool motor_
     _mcpwm_capture_config_0 = (mcpwm_capture_config_t) {.cap_edge = MCPWM_POS_EDGE, .cap_prescale = 1, .capture_cb = _encoder_callback, .user_data = this};
     _mcpwm_capture_config_1 = (mcpwm_capture_config_t) {.cap_edge = MCPWM_BOTH_EDGE, .cap_prescale = 1, .capture_cb = NULL, .user_data = NULL};
 
-    _kp = 50;
-    _ki = 500.0;
     _prev_time_us = esp_timer_get_time();
 
     ESP_ERROR_CHECK(mcpwm_set_pin(_mcpwm_unit, &_motor_pins));
@@ -116,19 +114,34 @@ float Motor::updatePIControl(float actual_velocity)
     int64_t delta_time_us = current_time_us - _prev_time_us;
     _prev_time_us = current_time_us;
 
-    _error_integral += error * (float)delta_time_us / 1000000;
+    _error_integral += error * (float)delta_time_us / 1000000.;
 
     float i_out = _ki * _error_integral;
 
+    /*
     if(i_out > 100)
-        _error_integral = 100 / _ki;
+        _error_integral = 100. / _ki;
     else if (i_out < -100)
-        _error_integral = -100 / _ki;
+        _error_integral = -100. / _ki;
+        */
 
     //Calculate Ouput
     float output_duty_cycle = p_out + i_out;
 
-    return output_duty_cycle;
+    
+    float limited_output_duty_cycle = output_duty_cycle;
+
+    if(output_duty_cycle > 100)
+        limited_output_duty_cycle = 100;
+    else if(output_duty_cycle < -100)
+        limited_output_duty_cycle = -100;
+
+    _error_integral += (limited_output_duty_cycle - output_duty_cycle) * delta_time_us / 1000000.;
+
+    return limited_output_duty_cycle;      
+
+
+    //return output_duty_cycle;
 }
 
 float Motor::getActualVelocity()

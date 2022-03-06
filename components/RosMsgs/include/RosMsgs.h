@@ -18,6 +18,17 @@ namespace ros_msgs_lw
     struct Point2D;
 }
 
+/**
+ * @brief For every ROS Message Type which is communicated over the ROS Robot Bridge there has to be a ros_msgs::Type.
+ * These classes must provide the methods getSize(), allocateMemory(), getMsgType(), serialize() and deserialize().
+ * There are two types of RosMsgs Standard and Array type (e.g. String, Trajectory).
+ * For the Standard type message the allocateMemory() method can be left empty and
+ * the getSize() method will always return the accumulated size of its members.
+ * The Array type message uses the allocateMemory() method to allocate the required memory for the deserialization and
+ * the getSize() method returns zero if the array is empty or array length in bytes + 4 bytes (for the serialization of array length).
+ * 
+ * @note Publishing empty Array messages is not supported and will break the protocol!!!
+ */
 namespace ros_msgs
 {
     struct String
@@ -31,7 +42,7 @@ namespace ros_msgs
                 if(data.empty() == true)
                     return 0; 
                 
-                return sizeof(int32_t) + data.size() + 1;
+                return sizeof(int32_t) + data.size();
             }
 
             void allocateMemory(int32_t msg_len) 
@@ -50,9 +61,9 @@ namespace ros_msgs
             { 
                 if(data.empty() == false)
                 {
-                    ((int32_t*)buffer)[0] = data.size() + 1;
+                    ((int32_t*)buffer)[0] = data.size();
                     memcpy(buffer + sizeof(int32_t), data.c_str(), data.size());
-                    buffer[sizeof(int32_t) + data.size()] = '\0';
+                    //buffer[sizeof(int32_t) + data.size()] = '\0';
                 }
             }
             
@@ -392,21 +403,6 @@ namespace ros_msgs
 
             void serialize(uint8_t* buffer) const
             {   
-                /*
-                if(trajectory.empty() == false)
-                {
-                    *reinterpret_cast<int32_t*>(buffer) = trajectory.size() * TrajectoryStateVector::getSize();
-                    buffer += sizeof(int32_t);
-
-                    for(auto i : trajectory)
-                    {
-                        i.serialize(buffer);
-
-                        buffer += TrajectoryStateVector::getSize();
-                    }
-                }
-                */
-
                 if(_trajectory_points > 0)   
                 {
                     *reinterpret_cast<int32_t*>(buffer) = _trajectory_points * TrajectoryStateVector::getSize();
@@ -423,22 +419,6 @@ namespace ros_msgs
 
             void deserialize(uint8_t* buffer)
             {
-                /*
-                trajectory.clear();
-
-                trajectory.reserve(_trajectory_points);
-
-                for(int i = 0; i < _trajectory_points; i++)
-                {   
-                    TrajectoryStateVector trajectory_state;
-                    trajectory_state.deserialize(buffer);
-
-                    trajectory.push_back(trajectory_state);
-
-                    buffer += TrajectoryStateVector::getSize();
-                }
-                */
-
                for(int i = 0; i < _trajectory_points; i++)
                {
                    trajectory[i].deserialize(buffer);

@@ -9,7 +9,7 @@
 #define TIMER_TICKS_PER_US (TIMER_BASE_CLK / TIMER_DIVIDER / 1000000)
 #define TIMER_PERIOD_US 1000
 
-#define MAX_MOTOR_RPS (220 / 60)
+#define MAX_MOTOR_RPS (220. / 60.)
 
 MotorController* MotorController::_motor_controller = nullptr;
 timer_config_t MotorController::_timer_config = 

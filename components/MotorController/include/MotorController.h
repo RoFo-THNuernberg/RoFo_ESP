@@ -9,8 +9,8 @@
 #include "Motor.h"
 
 /**
- * @brief This class manages both intances of motor. It executes the PI control for both motors from a task, which is trigger by a timer interrupt.
- * 
+ * @brief This class manages both intances of Motor. 
+ * The PI controller of each motor is updated from a timer interrupt triggered task.
  */
 class MotorController
 {
@@ -27,8 +27,8 @@ class MotorController
         /**
          * @brief Set the velocity of both motors in RAD/s
          * 
-         * @param setpoint_velocity_a velocity of motor_a
-         * @param setpoint_velocity_b velocity of motor_b
+         * @param [in] setpoint_velocity_a velocity of motor_a
+         * @param [in] setpoint_velocity_b velocity of motor_b
          */
         void setVelocity(float setpoint_velocity_a, float setpoint_velocity_b);
 
@@ -42,7 +42,7 @@ class MotorController
         /**
          * @brief Disable the PI controller
          * 
-         * @note If disabled _motor_control_loop_task() will set the ouput duty cycle proportional to the setpoint_velocity
+         * @note If disabled _motor_control_loop_task() will set the output duty cycle to the value of setpoint_velocity
          */ 
         void disablePIcontrol();
 
@@ -52,7 +52,9 @@ class MotorController
         ~MotorController() {};
 
         /**
-         * @brief FreeRTOS Task sets ouput duty_cycle
+         * @brief FreeRTOS Task gets the current velocity, updates the PI controller and sets the ouput duty cycle.
+         * 
+         * @param [in] pvParameters pointer to the MotorController object
          */
         static void _motor_control_loop_task(void* pvParameters);
         
@@ -60,6 +62,8 @@ class MotorController
          * @brief Timer interrupt Callback function
          * 
          * @note Notifies _motor_control_loop_task() -> deferred interrupt handling
+         * 
+         * @param [in] args pointer to the TaskHandle 
          */ 
         static bool IRAM_ATTR _motor_control_interrupt(void* args);
 

@@ -20,7 +20,15 @@
 class KalmanFilter : public SensorPose
 {
     public:
-        //The first sensor in the list must be of absolute type
+         /**
+         * @brief Initialize the KalmanFilter instance
+         * 
+         * @note It is safe to call this function multiple times. It will only create one instance.
+         * 
+         * @param [in] sensor_list list of all the KalmanSensors which are fused by the KalmanFilter. The first sensor the list is used to initialize the KalmanFilter
+         * @param [in] output_velocity reference to the OutputVelocity object to obtain the velocity vector for the state estimation step
+         * @return Reference to the KalmanFilter instance
+         */
         static SensorPose& init(std::initializer_list<KalmanSensor const*> const& sensor_list, OutputVelocity const& output_velocity);
 
         bool peekAtPose(ros_msgs_lw::Pose2D& current_pose) const override;
@@ -31,7 +39,6 @@ class KalmanFilter : public SensorPose
         KalmanFilter(std::initializer_list<KalmanSensor const*> const& sensor_list, OutputVelocity const& output_velocity);
         KalmanFilter(KalmanFilter const&) = delete;
         ~KalmanFilter();
-        
         
         static void _kalman_filter_loop_timer(TimerHandle_t timer);
         static void _kalman_filter_loop_task(void* pvParameters);

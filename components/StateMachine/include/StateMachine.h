@@ -9,6 +9,13 @@
 
 class State;
 
+/**
+ * @brief The StateMachine is the top level control structure of the robot.
+ * It provides functions to change its internal state and thereby its behavior.
+ * It follows the State pattern design: https://en.wikipedia.org/wiki/State_pattern
+ * Although the state chart in the current implementation is rather small, 
+ * it can be easily altered to allow complex behaviour.
+ */
 class StateMachine
 {
     public:

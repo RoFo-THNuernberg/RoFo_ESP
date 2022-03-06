@@ -11,12 +11,47 @@
 #define WIFI_CONNECTED_BIT BIT0
 #define WIFI_FAIL_BIT BIT1
 
-EventGroupHandle_t Wifi::_wifi_event_group{};
-const wifi_init_config_t Wifi::_wifi_init_config = WIFI_INIT_CONFIG_DEFAULT();
-wifi_config_t Wifi::_wifi_config = {};
+Wifi* Wifi::_wifi = nullptr;
+wifi_init_config_t Wifi::_wifi_init_config = WIFI_INIT_CONFIG_DEFAULT();
+wifi_config_t Wifi::_wifi_config;
+
+Wifi::Wifi() 
+{
+    ESP_LOGI(TAG, "Initializing Wifi...");
+
+    _wifi_event_group = xEventGroupCreate();
+
+    ESP_ERROR_CHECK(esp_netif_init());
+    ESP_ERROR_CHECK(esp_event_loop_create_default());
+
+    esp_netif_create_default_wifi_sta();
+    
+    ESP_ERROR_CHECK(esp_wifi_init(&_wifi_init_config)); 
+
+    //prevents Hardware bug 3.11 -> ECO and Workarounds for Bugs: 
+    //https://www.espressif.com/sites/default/files/documentation/eco_and_workarounds_for_bugs_in_esp32_en.pdf
+    ESP_ERROR_CHECK(esp_wifi_set_ps(WIFI_PS_NONE));
+
+    ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &_event_handler, this, NULL));
+    ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &_event_handler, this, NULL));
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+
+    memcpy(_wifi_config.sta.ssid, WIFI_SSID, sizeof(WIFI_SSID));
+    memcpy(_wifi_config.sta.password, WIFI_PASSWORD, sizeof(WIFI_PASSWORD));
+    _wifi_config.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
+    _wifi_config.sta.pmf_cfg.capable = true;
+    _wifi_config.sta.pmf_cfg.required = false;
+
+    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &_wifi_config));
+    ESP_ERROR_CHECK(esp_wifi_start());
+
+    ESP_LOGI(TAG, "Wifi initialization successful!");
+} 
 
 void Wifi::_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data)
 {
+    Wifi& wifi = *reinterpret_cast<Wifi*>(arg);
+
     static int conn_retry_num = 0;
 
     if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) 
@@ -31,7 +66,7 @@ void Wifi::_event_handler(void* arg, esp_event_base_t event_base, int32_t event_
         } 
         else 
         {
-            xEventGroupSetBits(_wifi_event_group, WIFI_FAIL_BIT);
+            xEventGroupSetBits(wifi._wifi_event_group, WIFI_FAIL_BIT);
         }
         ESP_LOGI(TAG,"connect to the AP failed");
     } 
@@ -40,63 +75,20 @@ void Wifi::_event_handler(void* arg, esp_event_base_t event_base, int32_t event_
         ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
         ESP_LOGI(TAG, "got ip:" IPSTR, IP2STR(&event->ip_info.ip));
         conn_retry_num = 0;
-        xEventGroupSetBits(_wifi_event_group, WIFI_CONNECTED_BIT);
+        xEventGroupSetBits(wifi._wifi_event_group, WIFI_CONNECTED_BIT);
     }
 }
 
 
-esp_err_t Wifi::init() 
+Wifi& Wifi::init() 
 {   
+    if(_wifi == nullptr)
+        _wifi = new Wifi;
 
-    ESP_LOGI(TAG, "Initializing Wifi...");
-
-    esp_err_t status{ESP_OK};
-
-    _wifi_event_group = xEventGroupCreate();
-
-    status = esp_netif_init();
-
-    if(ESP_OK == status)
-        status = esp_event_loop_create_default();
-
-    if(ESP_OK == status) 
-    {
-        esp_netif_create_default_wifi_sta();
-        status = esp_wifi_init(&_wifi_init_config); 
-
-        //prevents Hardware bug 3.11 -> ECO and Workarounds for Bugs: 
-        //https://www.espressif.com/sites/default/files/documentation/eco_and_workarounds_for_bugs_in_esp32_en.pdf
-        esp_wifi_set_ps(WIFI_PS_NONE);
-    }
-
-    if(ESP_OK == status)
-        status = esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &_event_handler, NULL, NULL);
-
-    if(ESP_OK == status)
-        status = esp_event_handler_instance_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &_event_handler, NULL, NULL);
-    
-    if(ESP_OK == status)
-        status = esp_wifi_set_mode(WIFI_MODE_STA);
-
-    memcpy(_wifi_config.sta.ssid, WIFI_SSID, sizeof(WIFI_SSID));
-    memcpy(_wifi_config.sta.password, WIFI_PASSWORD, sizeof(WIFI_PASSWORD));
-    _wifi_config.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
-    _wifi_config.sta.pmf_cfg.capable = true;
-    _wifi_config.sta.pmf_cfg.required = false;
-
-    if(ESP_OK == status)
-        status = esp_wifi_set_config(WIFI_IF_STA, &_wifi_config);
-
-    if(ESP_OK == status)
-        status = esp_wifi_start();
-
-    if(ESP_OK == status)
-        ESP_LOGI(TAG, "Wifi initialization successful!");
-    
-    return status;
+    return *_wifi;
 }
 
-esp_err_t Wifi::begin() {
+void Wifi::begin() {
 
     esp_err_t status = ESP_OK;
 
@@ -119,5 +111,5 @@ esp_err_t Wifi::begin() {
         status = ESP_FAIL;
     }
 
-    return status;
+    ESP_ERROR_CHECK(status);
 }

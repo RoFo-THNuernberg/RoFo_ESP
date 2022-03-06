@@ -2,9 +2,9 @@
 
 #define WHEEL_BASE_DISTANCE 0.13
 #define WHEEL_RADIUS 0.07
-#define MAX_MOTOR_RPS (220 / 60)
-#define MAX_LINEAR_VELOCITY (MAX_MOTOR_RPS * 2 * M_PI * WHEEL_RADIUS) 
-#define MAX_ANGULAR_VELOCITY (2 * MAX_LINEAR_VELOCITY / WHEEL_BASE_DISTANCE)
+#define MAX_MOTOR_RPS (220. / 60.)
+#define MAX_LINEAR_VELOCITY (MAX_MOTOR_RPS * 2. * M_PI * WHEEL_RADIUS) 
+#define MAX_ANGULAR_VELOCITY (2. * MAX_LINEAR_VELOCITY / WHEEL_BASE_DISTANCE)
 
 OutputVelocitySim::OutputVelocitySim(ros::Publisher<ros_msgs::Twist2D>& publisher) : _publisher{publisher} {}
 

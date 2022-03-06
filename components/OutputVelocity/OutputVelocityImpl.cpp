@@ -2,7 +2,7 @@
 
 #define WHEEL_BASE_DISTANCE 0.13
 #define WHEEL_RADIUS 0.07
-#define MAX_MOTOR_RPS (220 / 60)
+#define MAX_MOTOR_RPS (220. / 60.)
 
 OutputVelocityImpl::OutputVelocityImpl(MotorController& motor_controller) : _motor_controller{motor_controller} {}
 

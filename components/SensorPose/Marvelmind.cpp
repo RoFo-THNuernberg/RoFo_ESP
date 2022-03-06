@@ -67,6 +67,7 @@ Marvelmind::Marvelmind() : _measurement_noise_cov(3, 3)
     ESP_ERROR_CHECK(uart_set_pin(_uart_port, UART_TX_PIN, UART_RX_PIN, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
 
     _current_pose_queue = xQueueCreate(1, sizeof(ros_msgs_lw::Pose2D));
+    _peek_at_pose_queue = xQueueCreate(1, sizeof(ros_msgs_lw::Pose2D));
 
     xTaskCreate(_uart_read_data_task, "_uart_read_data_task", 2048, this, 5, NULL);
 }
@@ -75,6 +76,7 @@ Marvelmind::~Marvelmind()
 {
     vTaskDelete(_uart_read_data_task_handle);
     vQueueDelete(_current_pose_queue);
+    vQueueDelete(_peek_at_pose_queue);
 }
 
 Marvelmind& Marvelmind::init()
@@ -87,7 +89,7 @@ Marvelmind& Marvelmind::init()
 
 bool Marvelmind::peekAtPose(ros_msgs_lw::Pose2D& current_pose) const
 {
-    if(xQueuePeek(_current_pose_queue, &current_pose, 0) == pdPASS)
+    if(xQueuePeek(_peek_at_pose_queue, &current_pose, 0) == pdPASS)
         return true;
 
     return false;
@@ -222,8 +224,8 @@ void Marvelmind::_uart_read_data_task(void* pvParameters)
 
                 ros_msgs_lw::Pose2D current_pose;
 
-                current_pose.x = static_cast<float>(msg_data->x_coordinate_mm) / 1000;
-                current_pose.y = static_cast<float>(msg_data->y_coordinate_mm) / 1000;
+                current_pose.x = (static_cast<float>(msg_data->x_coordinate_mm) - 16.739) / 1000.;
+                current_pose.y = static_cast<float>(msg_data->y_coordinate_mm) / 1000.;
                 current_pose.theta = static_cast<float>(msg_data->hedgehog_orientation_raw & 0xFFF) / 10. * 2 * M_PI / 360. + M_PI / 2.;
 
                 current_pose.theta = atan2(sin(current_pose.theta), cos(current_pose.theta));

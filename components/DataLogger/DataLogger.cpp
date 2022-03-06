@@ -44,7 +44,7 @@ void DataLogger::startLogging(std::shared_ptr<ros_msgs::String> log_time)
     {
         if(_data_logger_task_handle == nullptr)
         {
-            ESP_LOGI(TAG, "Start logging!");
+            ESP_LOGI(TAG, "Start logging for %.2f seconds!", data_logging_time_ms / 1000.);
 
             _data_logging_end_us = esp_timer_get_time() + data_logging_time_ms * 1000;
 
@@ -63,7 +63,7 @@ void DataLogger::logData(const char* format, ...)
 
     if(xSemaphoreTake(_data_logging_semphr, 0) == pdPASS)
     {
-        if(_log_buffer_cntr + DATA_LOG_SAMPLE_SIZE > DATA_LOG_BUFFER_SIZE)
+        if(_log_buffer_cntr + DATA_LOG_SAMPLE_SIZE >= DATA_LOG_BUFFER_SIZE)
         {   
             if(xQueueSend(_log_buffer_queue, &_log_buffer, 0) == pdPASS)
             {
@@ -94,7 +94,7 @@ void DataLogger::_data_logger_task(void *pvParameters)
 
     while(esp_timer_get_time() < data_logger._data_logging_end_us)
     {
-        if(xQueueReceive(data_logger._log_buffer_queue, &log_buffer, portMAX_DELAY) == pdPASS)
+        if(xQueueReceive(data_logger._log_buffer_queue, &log_buffer, 1000 / portTICK_PERIOD_MS) == pdPASS)
         {
             ros_msgs::String msg;
             msg.data.assign(log_buffer);
@@ -112,7 +112,7 @@ void DataLogger::_data_logger_task(void *pvParameters)
     while(xQueueReceive(data_logger._log_buffer_queue, &log_buffer, 0) == pdPASS)
     {
         ros_msgs::String msg;
-        msg.deserialize(reinterpret_cast<uint8_t*>(log_buffer));
+        msg.data.assign(log_buffer);
 
         data_logger._publisher.publish(msg);
 
@@ -120,6 +120,8 @@ void DataLogger::_data_logger_task(void *pvParameters)
     }
 
     ESP_LOGI(TAG, "End logging!");
+
+    delete[] data_logger._log_buffer;
 
     data_logger._data_logger_task_handle = nullptr;
     vTaskDelete(NULL);

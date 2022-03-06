@@ -25,7 +25,7 @@
 #define DATA_LOGGING
 #include "DataLogger.h"
 
-#define USE_SIM
+//#define USE_SIM
 #define KALMAN
 //#define STEP_RESPONSE
 
@@ -43,10 +43,8 @@ extern "C" void app_main(void)
   }
   ESP_ERROR_CHECK(ret);
 
-  Wifi wifi{};
-
-  ESP_ERROR_CHECK(wifi.init());
-  ESP_ERROR_CHECK(wifi.begin());
+  Wifi& wifi = Wifi::init();
+  wifi.begin();
 
   Socket& ros_socket = *new Socket(ROS_SOCKET_PORT, SERVER_IP_ADDR);
 

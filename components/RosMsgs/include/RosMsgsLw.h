@@ -13,6 +13,11 @@ namespace ros_msgs
     struct Point2D;
 }
 
+/**
+ * @brief Since double precision arithmetic is only emulated on the ESP32, 
+ * the ros_msgs_lw classes can be used to maximize execution speed.
+ * These classes should provide a type casting constructor for ros_msgs.
+ */
 namespace ros_msgs_lw
 {
     struct Pose2D

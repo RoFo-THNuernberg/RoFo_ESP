@@ -41,8 +41,6 @@ void Socket::connect_socket()
                 int flags = fcntl(_connection_fd, F_GETFL);
                 fcntl(_connection_fd, F_SETFL, flags | O_NONBLOCK);
 
-                xSemaphoreGive(_send_mutx);
-
                 break;
             }
 
@@ -60,11 +58,8 @@ void Socket::connect_socket()
 void Socket::disconnect_socket() 
 {
     if (_connection_fd != -1) {
-        if(xSemaphoreTake(_send_mutx, portMAX_DELAY) == pdPASS)
-        {
-            ESP_LOGE(TAG, "Shutting down socket (port: %d) and restarting...", _socket_port);
-            close(_connection_fd);
-        }
+        ESP_LOGE(TAG, "Shutting down socket (port: %d) and restarting...", _socket_port);
+        close(_connection_fd);
     }
 }
 
@@ -99,19 +94,18 @@ int Socket::socket_receive_string(std::string& rx_string, int max_bytes)
 
     while(bytes_read < max_bytes)
     {   
-        do
-        {
-            if(len == SOCKET_FAIL)
-                vTaskDelay(1 / portTICK_PERIOD_MS);
+        len = recv(_connection_fd, rx_buffer + bytes_read, 1, 0);
 
-            len = recv(_connection_fd, rx_buffer + bytes_read, 1, 0);
-        } 
-        while(len == SOCKET_FAIL && errno == EWOULDBLOCK);
+        if(len == SOCKET_FAIL && errno == EWOULDBLOCK)
+        {
+            len = 0;
+            vTaskDelay(1 / portTICK_PERIOD_MS);
+        }
 
         if(len == SOCKET_FAIL || rx_buffer[bytes_read] == '\0')
             break;
         else
-            bytes_read++;
+            bytes_read += len;
     }
 
     if(len != SOCKET_FAIL)

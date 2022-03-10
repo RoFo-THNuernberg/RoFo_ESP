@@ -92,5 +92,6 @@ class Socket
 
         struct sockaddr_in _server_socket;
 
+        //prevents multiple tasks from accessing send() simultaneously
         SemaphoreHandle_t _send_mutx;
 };

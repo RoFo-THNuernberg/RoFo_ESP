@@ -2,6 +2,9 @@
 
 #include "esp_log.h"
 
+//#define DATA_LOGGING
+#include "DataLogger.h"
+
 #define TAG "approxLinController"
 
 approxLinController::approxLinController(std::shared_ptr<ros_msgs::Trajectory> trajectory) : _trajectory{trajectory} 
@@ -25,6 +28,8 @@ ros_msgs_lw::Twist2D approxLinController::update(ros_msgs_lw::Pose2D const& actu
     {
         ros_msgs::TrajectoryStateVector setpoint_vector = (*_trajectory)[_trajectory_cntr];
         _trajectory_cntr++;
+        
+        LOG_DATA("%.2f, %.2f, %.2f, %.2f\n", setpoint_vector.x, setpoint_vector.y, actual_pose.x, actual_pose.y);
 
         ros_msgs::Twist2D setpoint_vel;
         setpoint_vel.v = sqrt(pow(setpoint_vector.dx, 2) + pow(setpoint_vector.dy, 2));

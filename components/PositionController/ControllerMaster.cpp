@@ -11,7 +11,7 @@ ControllerMaster::ControllerMaster(OutputVelocity& output_velocity, SensorPose& 
 {   
     _pos_controller_mutx = xSemaphoreCreateMutex();
 
-    xTaskCreate(_control_loop_task, "control_loop_task", 4096, this, 8, &_control_loop_task_handle);
+    xTaskCreate(_control_loop_task, "control_loop_task", 8096, this, 8, &_control_loop_task_handle);
     _control_loop_timer_handle = xTimerCreate("control_loop", pdMS_TO_TICKS(10), pdTRUE, NULL, _control_loop_timer);
 
     _controller_is_stopped = true;

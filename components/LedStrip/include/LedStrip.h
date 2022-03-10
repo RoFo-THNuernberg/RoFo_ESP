@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstring>
+#include <cmath>
 #include <stdint.h>
 #include <memory>
 
@@ -42,7 +43,6 @@ struct LedStrip {
     bool max_value = false;
 
     int current_index = 0;
-    int prev_index = 0;
     int counter_circle = 0;
 
     void animation_callback(std::shared_ptr<ros_msgs::String> msg);
@@ -133,6 +133,8 @@ struct LedStrip {
     * @brief sets the led strip up ready for animations
     *
     */
+
+    void rgb2hue();
     static LedStrip& init();
 
     private:

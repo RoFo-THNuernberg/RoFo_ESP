@@ -20,7 +20,7 @@ class p2pController : public PositionController
 
     private:
         float _kp_v = 0.2;
-        float _kp_w = 0.8;
+        float _kp_w = 1.0;
 
         ros_msgs_lw::Point2D const _goal_point;
         

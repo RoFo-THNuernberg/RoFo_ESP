@@ -1,5 +1,8 @@
 #include "statInOutLinController.h"
 
+//#define DATA_LOGGING
+#include "DataLogger.h"
+
 statInOutLinController::statInOutLinController(std::shared_ptr<ros_msgs::Trajectory> trajectory) : _trajectory{trajectory} {}
 
 ros_msgs_lw::Twist2D statInOutLinController::update(ros_msgs_lw::Pose2D const& actual_pose) 
@@ -18,6 +21,8 @@ ros_msgs_lw::Twist2D statInOutLinController::update(ros_msgs_lw::Pose2D const& a
     {
         ros_msgs::TrajectoryStateVector const&  setpoint_vector = (*_trajectory)[_trajectory_cntr];
         _trajectory_cntr++;
+
+        LOG_DATA("%.2f, %.2f, %.2f, %.2f\n", setpoint_vector.x, setpoint_vector.y, actual_pose.x, actual_pose.y);
 
         //calculate current position of point b
         ros_msgs::Pose2D actual_b_pose;

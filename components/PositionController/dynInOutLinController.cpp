@@ -2,7 +2,7 @@
 
 #include "esp_log.h"
 
-//#define DATA_LOGGING
+#define DATA_LOGGING
 #include "DataLogger.h"
 
 #define TAG "dynInOutLinController"

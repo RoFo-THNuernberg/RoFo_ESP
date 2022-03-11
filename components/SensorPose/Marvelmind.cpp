@@ -231,6 +231,7 @@ void Marvelmind::_uart_read_data_task(void* pvParameters)
                 current_pose.theta = atan2(sin(current_pose.theta), cos(current_pose.theta));
 
                 xQueueOverwrite(marvelmind->_current_pose_queue, &current_pose);
+                xQueueOverwrite(marvelmind->_peek_at_pose_queue, &current_pose);
 
                 break;
             }

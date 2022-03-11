@@ -106,7 +106,7 @@ LedStrip::LedStrip()
     // Clear LED strip (turn off all LEDs)
     clear(0);
 
-    xTaskCreate(led_handler, "led_handler", 2048, this, 2, &led_handler_thread);
+    xTaskCreate(led_handler, "led_handler", 4096, this, 2, &led_handler_thread);
 
     xMessageBuffer = xMessageBufferCreate(xMessageBufferSizeBytes);
 }
@@ -330,7 +330,6 @@ void LedStrip::animation_line()
 
 void LedStrip::animation_pulse()
 {
-    rgb2hue();
     hsv2rgb(hue, 100, value, &red, &green, &blue);
 
     memset(buffer, 0 , max_leds * 3);
@@ -441,8 +440,8 @@ void LedStrip::led_handler(void *arg)
 {   
     LedStrip &ledStrip = *reinterpret_cast<LedStrip*>(arg);
 
-    char* received_message = new char[ledStrip.xMessageBufferSizeBytes];
-    char* animation = nullptr;
+    char received_message[ledStrip.xMessageBufferSizeBytes] = {0};
+    char animation[32];
     char *red;
     char *green;
     char *blue;
@@ -450,11 +449,12 @@ void LedStrip::led_handler(void *arg)
     while(1)
     {
         size_t xReceivedBytes = 0;
+
         if((xReceivedBytes = xMessageBufferReceive( ledStrip.xMessageBuffer, received_message, ledStrip.xMessageBufferSizeBytes, 0)) > 0)
         {
             
             //Getting Animation and RGB values
-            animation = strtok(received_message, ",");
+            strcpy(animation, strtok(received_message, ","));
             red = strtok(NULL, ",");
             green = strtok(NULL, ",");
             blue = strtok(NULL, ",");
@@ -464,6 +464,9 @@ void LedStrip::led_handler(void *arg)
             ledStrip.blue = strtoul(blue, NULL, 0);
 
             ledStrip.rgb2hue();
+
+            for(int i = 0; i < ledStrip.xMessageBufferSizeBytes; i++)
+                received_message[i] = '\0';
         }
 
         if(animation != nullptr)

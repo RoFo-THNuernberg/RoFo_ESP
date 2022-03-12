@@ -2,7 +2,7 @@
 
 #include "esp_log.h"
 
-static const char *TAG = "ws2815";
+#define TAG "LedStrip"
 
 
 #define WS2815_T0H_NS (350)
@@ -10,6 +10,7 @@ static const char *TAG = "ws2815";
 #define WS2815_T1H_NS (1000)
 #define WS2815_T1L_NS (350)
 #define WS2815_RESET_US (280)
+#define LEDTAG "LedStrip"
 
 static uint32_t ws2815_t0h_ticks = 0;
 static uint32_t ws2815_t1h_ticks = 0;
@@ -19,6 +20,7 @@ static uint32_t ws2815_t1l_ticks = 0;
 #define RMT_TX_CHANNEL RMT_CHANNEL_0
 
 LedStrip* LedStrip::_led_strip = nullptr;
+TaskHandle_t LedStrip::led_handler_thread{};
 
 
 static void IRAM_ATTR ws2815_rmt_adapter(const void *src, rmt_item32_t *dest, size_t src_size,
@@ -102,25 +104,25 @@ LedStrip::LedStrip()
     ESP_ERROR_CHECK(led_strip_new_rmt(&strip_config));
 
     // Clear LED strip (turn off all LEDs)
-    clear(100);
+    clear(0);
+
+    xTaskCreate(led_handler, "led_handler", 4096, this, 2, &led_handler_thread);
+
+    xMessageBuffer = xMessageBufferCreate(xMessageBufferSizeBytes);
 }
 
 LedStrip::~LedStrip()
 {
     delete[] buffer;
+    vTaskDelete(led_handler_thread);
 }
-
 
 void LedStrip::animation_callback(std::shared_ptr<ros_msgs::String> msg)
 {
-    if((*msg).data == "rainbow")
-        animation_rainbow();
-    else if((*msg).data == "pulse")
-        animation_pulse();
-    else if((*msg).data == "line")
-        animation_line();
-    else if((*msg).data == "circle")
-        animation_circle();
+    const char *message = msg->data.c_str();
+
+   xMessageBufferSend(xMessageBuffer, message, msg->data.size(), 0);
+
 }
 
 
@@ -221,6 +223,40 @@ void LedStrip::hsv2rgb(uint32_t h, uint32_t s, uint32_t v, uint32_t *r, uint32_t
     }
 }
 
+void LedStrip::rgb2hue()
+{
+    int max_value;
+    int min_value;
+    float temp_hue;
+
+    max_value = fmax(fmax(red, green), blue);
+    min_value = fmin(fmin(red, green), blue);
+
+    if(max_value == min_value)
+        temp_hue =  0;
+
+    if(max_value == red)
+    {   
+        temp_hue = ((float)green - (float)blue) / (float)(max_value - min_value);
+
+    }else if(max_value == green)
+    {
+        temp_hue = 2 + ((float)blue - (float)red) / (float)(max_value - min_value);
+
+    }else if(max_value == blue)
+    {
+        temp_hue = 4 + ((float)red - (float)green) / (float)(max_value - min_value);
+    }
+
+    temp_hue = temp_hue * 60;
+
+    if(temp_hue < 0)    
+        temp_hue += 360;
+
+    hue = temp_hue;
+
+}
+
 void LedStrip::animation_rainbow()
 {
 
@@ -232,7 +268,6 @@ void LedStrip::animation_rainbow()
     }     
 
     refresh(0);
-    clear(0);
 
     hue += 3;
 
@@ -240,28 +275,64 @@ void LedStrip::animation_rainbow()
 
 void LedStrip::animation_line()
 {
+    memset(buffer, 0 , max_leds * 3);
 
-    hsv2rgb(hue, 100, 50, &red, &green, &blue);
+    if(current_index == 0)
+    {   
+        set_pixel(current_index, red, green, blue);
+    }
+    else if(current_index == 1)
+    {
+        set_pixel(current_index - 1, red, green, blue);
+        set_pixel(current_index, red, green, blue);
+        
+    }else if(current_index == 2)
+    {
+        set_pixel(current_index - 2, red, green, blue);
+        set_pixel(current_index - 1, red, green, blue);
+        set_pixel(current_index, red, green, blue);
+        
+    }else if(current_index >= 3 && current_index < max_leds)
+    {   
+        set_pixel(current_index - 3, 0, 0, 0);
 
-    set_pixel(prev_index, 0, 0, 0);
-    set_pixel(current_index, red, green, blue);
+        set_pixel(current_index - 2, red, green, blue);
+        set_pixel(current_index - 1, red, green, blue);
+        set_pixel(current_index, red, green, blue);
+        
+    }else if(current_index == max_leds)
+    {
+        set_pixel(max_leds - 3, 0, 0, 0);   
+
+        set_pixel(max_leds - 2, red, green, blue);  
+        set_pixel(max_leds - 1, red, green, blue);  
+        
+    }else if(current_index == max_leds + 1)
+    {
+        set_pixel(max_leds - 2, 0, 0, 0);           
+
+        set_pixel(max_leds - 1, red, green, blue);  
+        
+    }else if(current_index == max_leds + 2)
+    {
+        set_pixel(max_leds - 1, 0, 0, 0);               
     
-    refresh(0);
-    clear(0);
+    }
 
-    prev_index = current_index;
+    refresh(0);
+
     current_index++;
 
-    if(current_index >= max_leds)
+    if(current_index >= max_leds + 3)
         current_index = 0;
 
-    hue += 1;
 }
 
 void LedStrip::animation_pulse()
 {
-
     hsv2rgb(hue, 100, value, &red, &green, &blue);
+
+    memset(buffer, 0 , max_leds * 3);
 
     for (int i = 0; i < max_leds; i++)
     {
@@ -269,7 +340,7 @@ void LedStrip::animation_pulse()
     }
     
     refresh(0);
-    clear(0);
+
 
     if(max_value == false)
     {
@@ -291,8 +362,7 @@ void LedStrip::animation_pulse()
 
 void LedStrip::animation_circle()
 {
-   
-    hsv2rgb(hue, 100, 50, &red, &green, &blue);
+    memset(buffer, 0 , max_leds * 3);
 
     if(counter_circle == 0)
     {
@@ -301,7 +371,7 @@ void LedStrip::animation_circle()
             set_pixel(circle_inner[i], red, green, blue);
         }
         refresh(0);
-        clear(0);
+    
     }
 
     if(counter_circle == 1)
@@ -315,8 +385,7 @@ void LedStrip::animation_circle()
         {
             set_pixel(circle_middle_1[i], red, green, blue);
         }
-        refresh(0);
-        clear(0);   
+        refresh(0);  
     }
 
     if(counter_circle == 2)
@@ -331,8 +400,7 @@ void LedStrip::animation_circle()
             set_pixel(circle_middle_2[i], red, green, blue);
         }
 
-        refresh(0);
-        clear(0);   
+        refresh(0);   
     }
 
     if(counter_circle == 3)
@@ -347,8 +415,7 @@ void LedStrip::animation_circle()
             set_pixel(circle_outer[i], red, green, blue);
         }
 
-        refresh(0);
-        clear(0);   
+        refresh(0);   
     }
 
     counter_circle++;
@@ -356,4 +423,66 @@ void LedStrip::animation_circle()
     if(counter_circle > 3)
         counter_circle = 0;
 
+}
+
+void LedStrip::animation_specific()
+{
+    for(int i = 0; i < max_leds; i++)
+    {
+        set_pixel(i, red, green, blue);
+    }
+
+    refresh(0);
+
+}
+
+void LedStrip::led_handler(void *arg)
+{   
+    LedStrip &ledStrip = *reinterpret_cast<LedStrip*>(arg);
+
+    char received_message[ledStrip.xMessageBufferSizeBytes] = {0};
+    char animation[32];
+    char *red;
+    char *green;
+    char *blue;
+
+    while(1)
+    {
+        size_t xReceivedBytes = 0;
+
+        if((xReceivedBytes = xMessageBufferReceive( ledStrip.xMessageBuffer, received_message, ledStrip.xMessageBufferSizeBytes, 0)) > 0)
+        {
+            
+            //Getting Animation and RGB values
+            strcpy(animation, strtok(received_message, ","));
+            red = strtok(NULL, ",");
+            green = strtok(NULL, ",");
+            blue = strtok(NULL, ",");
+
+            ledStrip.red = strtoul(red, NULL, 0);
+            ledStrip.green = strtoul(green, NULL, 0);
+            ledStrip.blue = strtoul(blue, NULL, 0);
+
+            ledStrip.rgb2hue();
+
+            for(int i = 0; i < ledStrip.xMessageBufferSizeBytes; i++)
+                received_message[i] = '\0';
+        }
+
+        if(animation != nullptr)
+        {
+            if(!strcmp(animation ,"rainbow"))
+                ledStrip.animation_rainbow();
+            else if(!strcmp(animation ,"pulse"))
+                ledStrip.animation_pulse();
+            else if(!strcmp(animation ,"line"))
+                ledStrip.animation_line();
+            else if(!strcmp(animation ,"circle"))
+                ledStrip.animation_circle();
+            else if(!strcmp(animation ,"specific"))
+                ledStrip.animation_specific();
+        }
+
+        vTaskDelay(10);
+    }
 }

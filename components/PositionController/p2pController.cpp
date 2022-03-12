@@ -2,6 +2,9 @@
 
 #include "esp_log.h"
 
+//#define DATA_LOGGING
+#include "DataLogger.h"
+
 #define TAG "p2pController"
 
 p2pController::p2pController(ros_msgs_lw::Point2D const& goal_point) : _goal_point{goal_point} {}
@@ -9,6 +12,8 @@ p2pController::p2pController(ros_msgs_lw::Point2D const& goal_point) : _goal_poi
 ros_msgs_lw::Twist2D p2pController::update(ros_msgs_lw::Pose2D const& actual_pose)
 {   
     ros_msgs_lw::Twist2D output_vel;
+
+    LOG_DATA("%.2f, %.2f\n", actual_pose.x, actual_pose.y);
 
     //calculate new orientation setpoint
     float setpoint_theta =  atan2(_goal_point.y - actual_pose.y, _goal_point.x - actual_pose.x); 

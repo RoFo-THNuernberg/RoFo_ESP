@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstring>
+#include <cmath>
 #include <stdint.h>
 #include <memory>
 
@@ -8,6 +9,9 @@
 #include "esp_attr.h"
 #include <sys/cdefs.h>
 #include "sdkconfig.h"
+#include "freertos/message_buffer.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 
 #include "RosMsgs.h"
 #include "Subscriber.h"
@@ -15,8 +19,8 @@
 
 
 struct led_strip_config_t{
-    uint32_t max_leds;          /*!< Maximum LEDs in a single strip */
-    rmt_channel_t dev;          /*!< LED strip device (e.g. RMT channel, PWM channel, etc) */  
+    uint32_t max_leds;          /* Maximum LEDs in a single strip */
+    rmt_channel_t dev;          /* LED strip device (e.g. RMT channel, PWM channel, etc) */  
 } ;
 
 struct LedStrip {
@@ -39,9 +43,23 @@ struct LedStrip {
     bool max_value = false;
 
     int current_index = 0;
-    int prev_index = 0;
     int counter_circle = 0;
 
+    void animation_callback(std::shared_ptr<ros_msgs::String> msg);
+
+    // Animations
+    void animation_rainbow();
+    void animation_line();
+    void animation_pulse();
+    void animation_circle();
+    void animation_specific();
+
+    static void led_handler(void *arg);
+
+    static TaskHandle_t led_handler_thread;
+    MessageBufferHandle_t xMessageBuffer;
+    const size_t xMessageBufferSizeBytes = 100;
+    const TickType_t x0ms = pdMS_TO_TICKS( 0 );
 
     /**
     * @brief Set RGB for a specific pixel
@@ -115,15 +133,9 @@ struct LedStrip {
     * @brief sets the led strip up ready for animations
     *
     */
+
+    void rgb2hue();
     static LedStrip& init();
-
-    void animation_callback(std::shared_ptr<ros_msgs::String> msg);
-
-    // Animations
-    void animation_rainbow();
-    void animation_line();
-    void animation_pulse();
-    void animation_circle();
 
     private:
         LedStrip();

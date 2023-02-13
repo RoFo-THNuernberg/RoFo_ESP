@@ -73,8 +73,12 @@ extern "C" void app_main(void)
     OutputVelocity& output_velocity = OutputVelocityImpl::init(motor_controller);
 
     #ifdef KALMAN
-      Marvelmind& marvelmind_sensor = Marvelmind::init();
+      //BERNHARD: CHANGED EXISTING MARVELMIND SENSOR INIT FOR SIM_SENSOR -> INTERFACE FOR EXTERNAL POSE SUBSCRIPTION
+      /*Marvelmind& marvelmind_sensor = Marvelmind::init();
       SensorPose& pose_sensor = KalmanFilter::init({&marvelmind_sensor}, output_velocity);
+      */ 
+      SensorPoseSim& sim_sensor = SensorPoseSim::init(node_handle);
+      SensorPose& pose_sensor = KalmanFilter::init({&sim_sensor}, output_velocity);
     #else
       SensorPose& pose_sensor = Marvelmind::init();
     #endif
@@ -101,13 +105,14 @@ extern "C" void app_main(void)
   LedStrip& led_strip = LedStrip::init();
   node_handle.subscribe<ros_msgs::String>("led", std::bind(&LedStrip::animation_callback, &led_strip, std::placeholders::_1));
 
+
   while(1) 
   { 
     ros_msgs_lw::Pose2D pose;
 
     if(pose_sensor.peekAtPose(pose))
     {
-      //ESP_LOGI(TAG, "X: %f, Y: %f, Theta: %f", pose.x, pose.y,  pose.theta);
+      ESP_LOGI(TAG, "X: %f, Y: %f, Theta: %f", pose.x, pose.y,  pose.theta);
 
       ros_msgs::Pose2D pose_msg(pose);
       pose_feedback.publish(pose_msg);

@@ -1,13 +1,13 @@
 menu "Socket Configuration"
 
     config SERVER_IP_ADDR
-        string "Server IP address"
-        default "0.0.0.0"
+        string "Server IP"
+        default "192.168.1.119"
         help
             The client will connect to this IPV4 address.
 
     config ROS_SOCKET_PORT
-        int "Socket Port"
+        int 2888
         range 0 65535
         default 2888
         help

@@ -67,7 +67,10 @@ bool SensorPoseSim::calculateKalman(ros_msgs_lw::Pose2D const& a_priori_estimate
 
 bool SensorPoseSim::getAbsolutePose(ros_msgs_lw::Pose2D& initial_pose) const
 {
-    if(xQueueReceive(_current_pose_queue, &initial_pose, 0) == pdPASS)
+    ros_msgs_lw::Pose2D test(0,0,0);
+    //
+    //if(xQueueReceive(_current_pose_queue, &initial_pose, 0) == pdPASS)
+    if(xQueueReceive(_current_pose_queue, &test, 0) == pdPASS)
         return true;
 
     return false;

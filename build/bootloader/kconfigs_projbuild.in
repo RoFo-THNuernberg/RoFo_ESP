@@ -1,0 +1,4 @@
+source "/home/kamera/esp/esp-idf-v4.4.3/components/bootloader/Kconfig.projbuild"
+source "/home/kamera/esp/esp-idf-v4.4.3/components/esp_rom/Kconfig.projbuild"
+source "/home/kamera/esp/esp-idf-v4.4.3/components/esptool_py/Kconfig.projbuild"
+source "/home/kamera/esp/esp-idf-v4.4.3/components/partition_table/Kconfig.projbuild"

@@ -1,0 +1,21 @@
+{
+    "project_name":       "bootloader",
+    "project_path":       "/home/kamera/esp/esp-idf-v4.4.3/components/bootloader/subproject",
+    "build_dir":          "/home/kamera/Doesch_RoboterFormation/Roboterformation_ESP-IDF/build/bootloader",
+    "config_file":        "/home/kamera/Doesch_RoboterFormation/Roboterformation_ESP-IDF/sdkconfig",
+    "config_defaults":    "",
+    "app_elf":            "bootloader.elf",
+    "app_bin":            "bootloader.bin",
+    "git_revision":       "v4.4.3",
+    "target":             "esp32",
+    "rev":                "0",
+    "phy_data_partition": "",
+    "monitor_baud" :      "115200",
+    "monitor_toolprefix": "xtensa-esp32-elf-",
+    "config_environment" : {
+        "COMPONENT_KCONFIGS" : "/home/kamera/esp/esp-idf-v4.4.3/components/efuse/Kconfig;/home/kamera/esp/esp-idf-v4.4.3/components/esp32/Kconfig;/home/kamera/esp/esp-idf-v4.4.3/components/esp_common/Kconfig;/home/kamera/esp/esp-idf-v4.4.3/components/esp_hw_support/Kconfig;/home/kamera/esp/esp-idf-v4.4.3/components/esp_system/Kconfig;/home/kamera/esp/esp-idf-v4.4.3/components/freertos/Kconfig;/home/kamera/esp/esp-idf-v4.4.3/components/hal/Kconfig;/home/kamera/esp/esp-idf-v4.4.3/components/log/Kconfig;/home/kamera/esp/esp-idf-v4.4.3/components/newlib/Kconfig;/home/kamera/esp/esp-idf-v4.4.3/components/spi_flash/Kconfig",
+        "COMPONENT_KCONFIGS_PROJBUILD" : "/home/kamera/esp/esp-idf-v4.4.3/components/bootloader/Kconfig.projbuild;/home/kamera/esp/esp-idf-v4.4.3/components/esp_rom/Kconfig.projbuild;/home/kamera/esp/esp-idf-v4.4.3/components/esptool_py/Kconfig.projbuild;/home/kamera/esp/esp-idf-v4.4.3/components/partition_table/Kconfig.projbuild"
+    },
+    "build_components" : [ "bootloader", "bootloader_support", "efuse", "esp32", "esp_common", "esp_hw_support", "esp_rom", "esp_system", "esptool_py", "freertos", "hal", "log", "main", "micro-ecc", "newlib", "partition_table", "soc", "spi_flash", "xtensa", "" ],
+    "build_component_paths" : [ "/home/kamera/esp/esp-idf-v4.4.3/components/bootloader", "/home/kamera/esp/esp-idf-v4.4.3/components/bootloader_support", "/home/kamera/esp/esp-idf-v4.4.3/components/efuse", "/home/kamera/esp/esp-idf-v4.4.3/components/esp32", "/home/kamera/esp/esp-idf-v4.4.3/components/esp_common", "/home/kamera/esp/esp-idf-v4.4.3/components/esp_hw_support", "/home/kamera/esp/esp-idf-v4.4.3/components/esp_rom", "/home/kamera/esp/esp-idf-v4.4.3/components/esp_system", "/home/kamera/esp/esp-idf-v4.4.3/components/esptool_py", "/home/kamera/esp/esp-idf-v4.4.3/components/freertos", "/home/kamera/esp/esp-idf-v4.4.3/components/hal", "/home/kamera/esp/esp-idf-v4.4.3/components/log", "/home/kamera/esp/esp-idf-v4.4.3/components/bootloader/subproject/main", "/home/kamera/esp/esp-idf-v4.4.3/components/bootloader/subproject/components/micro-ecc", "/home/kamera/esp/esp-idf-v4.4.3/components/newlib", "/home/kamera/esp/esp-idf-v4.4.3/components/partition_table", "/home/kamera/esp/esp-idf-v4.4.3/components/soc", "/home/kamera/esp/esp-idf-v4.4.3/components/spi_flash", "/home/kamera/esp/esp-idf-v4.4.3/components/xtensa", "" ]
+}

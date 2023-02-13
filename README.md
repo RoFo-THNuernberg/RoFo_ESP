@@ -1,4 +1,4 @@
-# Roboterformation ESP-IDF Repository
+# Roboterformation ESP-IDF Repository ([changed from maxdoesch](https://github.com/maxdoesch/Roboterformation_ESP-IDF))
 __Roboterformation__ is a student project aiming to create a system of multiple mobile robots, which are able to drive in formation. Checkout the [Roboterformation ROS](https://github.com/maxdoesch/Roboterformation_ROS) repository for the ROS counterpart of this project.
 
 
